@@ -1,3 +1,0 @@
-'itil::qrule::ApplUsetime'=>{de=>'Prüfung der Nutzungszeiten',
-                             en=>'Check of use times'},
-'entries in use times incomplete'=>{de=>'Einträge unter Nutzungszeiten unvollständig'},

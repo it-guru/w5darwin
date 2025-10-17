@@ -1,3 +1,0 @@
-'base::fileacl'=>{de=>'WebFS Dateizugriffsregel',
-                  en=>'WebFS Fileaccessrule'},
-'Expiration-Date'=>{de=>'Verfallsdatum'},

@@ -1,2 +1,0 @@
-perl:Depends=perl (>= 5.8.4-8sarge3), perlapi-5.8.4
-shlibs:Depends=libc6 (>= 2.3.2.ds1-21)
