@@ -1,6 +1,0 @@
-'itil::autodiscmap'=>{de=>'AutoDiscovery Software Map',en=>'AutoDiscovery Software Map'},
-'probability'=>{de=>'Wahrscheinlichkeit'},
-'prob.1'=>{de=>'niedrig',en=>'low'},
-'prob.5'=>{de=>'mittel',en=>'middle'},
-'prob.9'=>{de=>'hoch',en=>'hight'},
-

@@ -1,2 +1,0 @@
-'itil::qrule::ApplCheckOPM'=>{de=>'Prüfung der Befüllung des Feldes OPM',en=>'check if OPM is documented'},
-'no Operation Manager defined'=>{de=>'kein Operation Manager eingetragen'},
