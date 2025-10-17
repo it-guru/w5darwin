@@ -1,0 +1,42 @@
+div.ViewEditor{
+   border-width:0;
+}
+div.ViewEditorMain{
+   margin:5px;
+   margin-top:1px;
+   border-width:1px;
+   border-style:solid;
+   background:#dadada;
+}
+select.ViewFieldSelect,div.FullFieldTreeSelect{
+   overflow:auto;
+   border-width:1px;
+   border-style:solid;
+   background:white;
+}
+
+a:link.viewdirectedit, a:visited.viewdirectedit, a:active.viewdirectedit  {
+            font-family:Arial,Adobe Helvetica,Helvetica;
+            text-decoration:none;
+            color:#000000;
+          }
+
+input[type="button"].fieldadd {
+border: none;
+margin:0px;
+margin-right:2px;
+padding:0px;
+outline:none;
+display: inline-block;
+}
+input[type="button"].fieldadd:focus {
+outline: 2px solid #30579f;
+}
+input[type="image"].fieldadd{
+background-color: transparent;
+}
+input[type="image"].fieldadd:focus {
+outline: 2px solid #30579f;
+}
+
+

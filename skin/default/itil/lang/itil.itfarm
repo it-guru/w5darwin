@@ -1,0 +1,12 @@
+'itil::itfarm'=>{de=>'Serverfarm',en=>'Serverfarm'},
+'Combound'=>{de=>'Verbund'},
+'Databoss'=>{de=>'Datenverantwortlicher'},
+'fieldgroup.assets'=>{de=>'Hardware',en=>'Assets'},
+'fieldgroup.systems'=>{de=>'Systeme',en=>'Systems'},
+'fieldgroup.applications'=>{de=>'beteiligte Anwendungen',en=>'involved Applications'},
+'Application names'=>{de=>'Anwendungsnamen'},
+'Applications'=>{de=>'Anwendungen'},
+'invalid short name specified'=>{de=>'ungültiger Kurzname'},
+'invalid name specified'=>{de=>'ungültiger Name'},
+'Short-Name'=>{de=>'Kurzname'},
+

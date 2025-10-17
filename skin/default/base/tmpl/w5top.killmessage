@@ -1,0 +1,10 @@
+Dear W5Base User,
+
+your request to W5Base-System '%sitename%' at module '%modlong()%' runs longer then %duration()% seconds. The duration limit for requests is %killtimeout()% seconds per request (while parallel requests are running). The process controller has killed your request with the process id %apid()% !
+
+This situation can happen, if you do query request, which create very large result sets. It is also possible that the database backend at the used module is slow or is hanging.
+
+If a process-kill happens too many times within %UserQueryAbbortFocus%h, your account (contact) will be temporary locked. This lock can not be removed, also not from admins.
+
+To prevent this, design your query requests with a smaller expected result set.
+

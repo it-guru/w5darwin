@@ -1,0 +1,344 @@
+#!/usr/bin/env perl 
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../mod";
+use RPC::Smart::Client;
+use strict;
+use kernel;
+use kernel::config;
+use kernel::EventController;
+use Getopt::Long;
+use kernel::cgi;
+use vars qw($opt_v $opt_h $opt_autokill $opt_fastkill $opt_c $configname);
+exit(1) if (!GetOptions('verbose'=>\$opt_v,
+                        'debug'=>\$opt_v,
+                        'autokill'=>\$opt_autokill,
+                        'fastkill'=>\$opt_fastkill,
+                        'help'=>\$opt_h,
+                        'config=s'=>\$opt_c));
+
+if ($opt_h){
+   help();
+   exit(1);
+}
+if ($opt_v){
+   $W5V2::Debug=1;
+}
+else{
+   $W5V2::Debug=0;
+}
+if ($ENV{REMOTE_USER} eq ""){
+   if ($ENV{USER} ne ""){
+      $ENV{REMOTE_USER}="system/$ENV{USER}";
+   }
+   else{
+      $ENV{REMOTE_USER}="system/unknown";
+   }
+   $ENV{REAL_REMOTE_USER}="system/W5Event";
+}
+
+
+if ($opt_c eq ""){
+   $opt_c="w5base";
+}
+$configname=$opt_c;
+
+my %ClientParam=();
+
+my $curconfig=new kernel::config();
+
+if (!$curconfig->readconfig("$FindBin::Bin/..",$configname)){
+   msg(ERROR,"can't read configfile '%s'",$configname);
+   exit(1);
+}
+{
+   my $port=$curconfig->Param("W5SERVERPORT");
+   $port=4711 if ($port eq "");
+   msg(DEBUG,"W5ServerPort=%s",$port);
+   $ClientParam{'PeerPort'}=$port;
+}
+
+
+if (!defined($W5V2::W5Server)){
+   $ClientParam{'PeerAddr'}=$curconfig->Param("W5SERVERHOST");
+   $ClientParam{'PeerPort'}=$curconfig->Param("W5SERVERPORT");
+   $W5V2::W5Server=new RPC::Smart::Client(%ClientParam);
+   $W5V2::W5Server->Connect();
+
+}
+my $MyClient=new RPC::Smart::Client(%ClientParam);
+if (! defined($MyClient->Connect())){
+   msg(ERROR,"can't connect to server");
+   exit(1);
+}
+$W5V2::OperationContext="W5Server";
+$W5V2::Query=new kernel::cgi({});
+
+
+
+my $pid=`ps -eo pid,user,command | egrep "(apache|httpd|www-data|wwwrun)"`;
+
+my @apid;
+
+foreach my $l (split(/[\r\n]/,$pid)){
+   #printf STDERR ("fifi check $l\n");
+   if (my ($p,$user,$cmd)=$l=~m/^\s*(\d+)\s+(apache|httpd|www|wwwrun)\s+(.*(apache|httpd).*)$/){
+      push(@apid,$p);
+   }
+   elsif (my ($p,$user,$cmd)=$l=~m/^\s*(\d+)\s+(apache|httpd|www|wwwrun)\s+(.*fastapp\.pl)\s*$/){
+      push(@apid,$p);
+   }
+}
+
+
+
+my %stat;
+my %userpcount;
+my $statedir=$curconfig->Param("LogState");
+
+
+msg(DEBUG,"start cleanup of statedir='$statedir'");
+if (opendir(D,$statedir)){
+   while(my $de=readdir(D)){
+      next if (!($de=~m/^\d+\.pid$/));
+      my $pidfile=$statedir."/".$de;
+      my $mtime=(stat($pidfile))[9];
+      if (defined($mtime) && $mtime>0){
+         my $age=time()-$mtime;
+         if ($age>(3600*24)){
+            msg(DEBUG,sprintf("rm stale pid '%s' older then 24h\n",$de));
+            unlink($pidfile);
+         }
+      }
+   }
+   closedir(D);
+}
+else{
+   msg(ERROR,"fail to open statedir='$statedir'");
+   exit(1);
+}
+
+foreach my $apid (@apid){
+   #print("check pid $apid\n");
+   my $cpu=trim(`ps -p $apid -o pcpu,user | grep -v 'CPU'`);
+   my ($cpu,$user)=split(/\s+/,$cpu);
+   $stat{$apid}->{cpu}=$cpu;
+   $stat{$apid}->{sysuser}=$user;
+   my $statefile="$statedir/$apid.pid";
+   my $t0=time();
+   if (open(F,"<$statefile")){
+      $stat{$apid}->{state}=1;
+      my $l=<F>;
+      $l=~s/\s*$//;
+      my @d=split(/;/,$l);
+      if ($d[2] ne ""){ 
+         if ($d[0] ne ""){
+            $stat{$apid}->{user}=$d[0];
+         }
+         else{
+            $stat{$apid}->{user}="anonymous";
+         }
+         $userpcount{$stat{$apid}->{user}}++;
+         $stat{$apid}->{mod}=$d[1];
+         $stat{$apid}->{start}=$d[2];
+         $stat{$apid}->{duration}=$t0-$d[2];
+         $stat{$apid}->{clientip}=$d[3];
+      }
+      else{
+         printf STDERR ("ERROR: inconsistend pid file at '$statefile'\n");
+         printf STDERR ("ERROR: pid line='%s'\n",$l);
+      }
+      close(F);
+   }
+}
+#print STDERR Dumper(\%stat);
+
+
+my $UserQueryAbbortFocus=$curconfig->Param("UserQueryAbbortCountFocus");
+
+if ($UserQueryAbbortFocus<4){
+   $UserQueryAbbortFocus="4";
+}
+if ($UserQueryAbbortFocus>24){
+   $UserQueryAbbortFocus="24";
+}
+
+
+
+foreach my $apid (@apid){
+   if ($opt_autokill){
+      my $consolemsg="";
+      # fifi
+      #$stat{$apid}->{duration}=99999 if ($stat{$apid}->{user} ne "");
+       
+      if ($stat{$apid}->{duration}>600 || 
+          ($opt_fastkill && $stat{$apid}->{duration}>3) ||
+          $userpcount{$stat{$apid}->{user}}>1){
+         my $user=getModuleObject($curconfig,"base::user");
+         my $modlong=$user->T($stat{$apid}->{mod},$stat{$apid}->{mod});
+         $consolemsg.=sprintf("WARN: found long (%dsec) running request at ".
+                              "PID '%s'\n".
+                              "      by user '%s' at ModuleObject %s with\n".
+                              "      label '%s'\n",
+                              $stat{$apid}->{duration},
+                              $apid,$stat{$apid}->{user},
+                              $stat{$apid}->{mod},$modlong);
+         $user->SetFilter({accounts=>\$stat{$apid}->{user}});
+
+         my ($urec,$msg)=$user->getOnlyFirst(qw(email killtimeout
+                                                userid lastlang));
+         my $killtimeout=600;
+         if (defined($urec)){
+            if ($urec->{lastlang} ne ""){
+               $ENV{HTTP_FORCE_LANGUAGE}=$urec->{lastlang};
+            }
+            $killtimeout=$urec->{killtimeout};
+         }
+         if ($killtimeout<600){
+            $killtimeout=600;
+         }
+         my $forcekill=0;
+         if ($stat{$apid}->{user} ne "" &&
+             $stat{$apid}->{user} ne "anonymous"){
+            if ($userpcount{$stat{$apid}->{user}}>1){
+               $forcekill=1;
+               $killtimeout=300;  # multi query timeout level 1
+            }
+            if ($userpcount{$stat{$apid}->{user}}>2){
+               $forcekill=1;
+               $killtimeout=180;  # multi query timeout  level 2
+            }
+            if ($userpcount{$stat{$apid}->{user}}>3){
+               $forcekill=1;
+               $killtimeout=30;  # multi query timeout  level 3
+            }
+         }
+         if ($stat{$apid}->{duration}>10800 || 
+             ($opt_fastkill && $stat{$apid}->{duration}>3) ||
+             $stat{$apid}->{duration}>$killtimeout){
+            msg(INFO,"initiate KILL process for $apid");
+            if ($forcekill){
+               $killtimeout.=" (".
+                $user->T("while paralel multiple requests",'kernel::w5top').")";
+            }
+            if ($stat{$apid}->{sysuser} eq ""){
+               $consolemsg.=sprintf("   -> ERROR no sysuser for PID %s!\n",
+                                    $apid);
+            }
+            else{
+               my $cmdresult;
+               my $sudopref="sudo -u '$stat{$apid}->{sysuser}' --";
+
+               my $cmd="sudo -u '$stat{$apid}->{sysuser}' ".
+                       "kill -0 $apid >/dev/null 2>&1";
+               system($cmd);  # ceck if process runs still
+               if (($? >> 8)==0){  # exit code=0?
+                  my $cmd="$sudopref kill $apid >/dev/null 2>&1";
+                  $consolemsg.=sprintf("\n   -> initiate \"%s\"\n",$cmd);
+                  msg(INFO,"run command '$cmd'");
+                  system($cmd);
+                  $cmdresult=$?;
+                  # check if kill was successfuly
+                  if (($? >> 8)==0){  # exit code=0? = kill ging eigentlich
+                     sleep(1);
+                     my $cmd="sudo -u '$stat{$apid}->{sysuser}' ".
+                             "kill -0 $apid >/dev/null 2>&1";
+                     system($cmd);  # ceck if process runs still
+                     if (($? >> 8)==0){  # exit code=0?
+                        $consolemsg.=sprintf("\n   -> soft kill failed\n");
+                        my $cmd="sudo -u ".
+                                "'$stat{$apid}->{sysuser}' kill -9 $apid";
+                        system($cmd);
+                     }
+                  }
+               }
+               if ((!($cmdresult == -1)) && $stat{$apid}->{sysuser} ne ""){
+                  my $exitcode=$cmdresult >> 8;
+                  if ($curconfig->Param("W5BaseOperationMode") ne "readonly"){
+                     my $act=getModuleObject($curconfig,"base::workflowaction");
+                     $act->Cache->{W5Server}=$W5V2::W5Server;
+               
+                     if (defined($urec)){
+                        my $blog=getModuleObject($curconfig,
+                                                 "base::userquerybreak");
+                        $blog->ValidatedInsertRecord({
+                           userid=>$urec->{userid},
+                           tbreak=>$stat{$apid}->{duration},
+                           dataobj=>$stat{$apid}->{mod},
+                           clientip=>$stat{$apid}->{clientip}
+                        });
+                     }
+                     my %param=(adminbcc=>1,
+                                emailcategory=>['QueryAbort','ProcessAbort'],
+                                emailfrom=>'"W5Base Process-Controller" <>');
+                     if (defined($urec)){
+                        $param{emailto}=$urec->{email};
+                     }
+                     my $sitename=$curconfig->Param("SITENAME");
+                     my $d=$act->getParsedTemplate(
+                           "tmpl/w5top.killmessage",{
+                              static=>{
+                                 UserQueryAbbortFocus=>$UserQueryAbbortFocus,
+                                 sitename=>$sitename,
+                                 modlong=>$modlong,
+                                 killtimeout=>$killtimeout,
+                                 duration=>$stat{$apid}->{duration},
+                                 apid=>$apid
+                              }
+                           });
+                     if ($exitcode==0){
+                        my $subject=sprintf($act->T(
+                           'Kill of query request on module "%s" (PID=%s)',
+                           'kernel::w5top'), $modlong,$apid);
+                        if ($curconfig->Param("W5BaseOperationMode") ne 
+                            "readonly"){
+                           $act->Notify("INFO",$subject,$d,%param);
+                        }
+                     }
+                     else{
+                        printf STDERR ("%s\n",$consolemsg);
+                        printf STDERR ("ERROR: ".
+                                       "exitcode of call was not zero!\n");
+                     }
+                  }
+               }
+               else{
+                  printf STDERR ("%s\n",$consolemsg);
+               }
+            }
+            if (defined($urec)){
+               delete($ENV{HTTP_FORCE_LANGUAGE});
+            }
+         }
+      }
+   }
+}
+
+my @order=keys(%stat);
+#print Dumper(\%stat);
+
+@order=sort({my $bk=$stat{$b}->{duration} <=> $stat{$a}->{duration};
+             if ($stat{$b}->{duration}==$stat{$a}->{duration}){
+                $stat{$b}->{user}==$stat{$a}->{user};
+             }
+             $bk;} @order);
+if (!$opt_autokill){
+   my $form="%-6s |%6s |%6s | %-25s | %s\n";
+
+   printf($form,"PID","CPU","rsec","User","Modul");
+   printf("%s\n",'-' x 79);
+   foreach my $pid (@order){
+      printf($form,$pid,$stat{$pid}->{cpu},
+                    $stat{$pid}->{duration},
+                    limitlen($stat{$pid}->{user},25,1),
+                    limitlen($stat{$pid}->{mod},25,1));
+   }
+}
+
+sub help
+{
+   printf STDERR ("Usage: W5Top -c {config} [-v] [--autokill] [--fastkill]\n");
+}
+
+
+

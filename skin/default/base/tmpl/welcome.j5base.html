@@ -1,0 +1,43 @@
+<script type='text/javascript' 
+        src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'>
+</script>
+<script language="JavaScript" 
+        src="../../../../public/base/load/J5Base.js">
+</script>
+<script language="JavaScript" 
+        src="../../../../public/base/load/J5Base.sampleapp.js">
+</script>
+
+<table border=0 width=100%>
+<tr>
+<td colspan=1>
+Search text:<input type=text id=searchtext value="*base*">
+</td>
+<td colspan=1 align=right>
+<input type=button id=userinfoButton value="UserInfo">
+<input type=button id=doToggle value="Toggle">
+</td>
+</tr>
+<tr>
+<td>
+<input type=button 
+       class=searchButton
+       moduleobject="itil::appl"
+       style="width:100%"
+       value="Search in itil::appl">
+</td>
+<td>
+<input type=button 
+       class=searchButton
+       moduleobject="base::user"
+       style="width:100%"
+       value="Search in base::user">
+</td>
+</tr>
+<tr>
+<td colspan=2>
+<div id=Result></div>
+</td>
+</tr>
+</table>
+

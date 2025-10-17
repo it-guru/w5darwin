@@ -1,0 +1,54 @@
+'itil::workflow::opmeasure'=>{de=>'Betriebs-Maßnahme',en=>'Operations measure'},
+'fieldgroup.extopmeadesc'=>{de=>'Erweiterte Maßnahmeninformationen',en=>'extended measure information'},
+'Initiate request to businessteam'=>{de=>'Auftrag an den Anwendungsbetrieb initieren'},
+'Initiate developer request'=>{de=>'Auftrag an die Entwicklung initieren'},
+'Initiate operation measure'=>{de=>'Betriebs-Maßnahme ableiten'},
+'itil::workflow::opmeasure::tip'=>{de=>'<br>
+Ein Betriebsmaßnahmen-Workflow dient zur Dokumentation von Änderungen und Anpassungen im Anwendungsumfeld.<br>Das Erstellen der Maßnahme kann nur durch steuernde Rollen (AM, TSM, OPM und dessen Vertreter) der jeweiligen Anwendung durchgeführt werden.<br>
+<br><br>
+Ein Betriebsmaßnahmen-Workflow darf als alternative für einen "Change" verwendet werden, wenn alle die folgenden Punkte erfüllt sind:<br><br>
+<ul>
+<li>  Es ist primär nur EINE Anwendung von der Maßnahme betroffen.
+<li>  Es sind keine tooltechnischen (Maßnahmen-Workflow) Abstimmungen mit u.U. weiteren betroffenen Personenkreisen notwendig.
+<li>  Wenn mehrere Maßnahmen aufeinander Auswirkungen haben können, so sind diese im Workflow miteinander zu verknüpfen (Workflow-Relationen).
+<li>  Die Maßnahme ist VOR Beginn im Tool zu dokumentieren.
+<li>  Kollisionsprüfung zu anderen Changes, Change-Freezes oder Maßnahmen wurde eigenverantwortlich im Vorfeld durchgeführt.
+<li>  Die Maßnahme wird ohne PSO (Downtime der Applikation) durchgeführt.
+</ul><br>
+<br>
+Generell ist es so, dass Maßnahmen initial nur an Personen im direkten Umfeld der betroffenen Anwendung zugewiesen werden können (dies ist bereits vom Workflow so vorgegeben).<br>
+<br>
+Die Dokumentation von Maßnahmen stellt keine Absicherung gegen mögliche Incidents dar. In einer Maßnahmen muss beschrieben sein/werden, das alle notwendigen Schritte für einen sicheren und bestmöglichen Betriebsablauf durchgeführt wurden.
+<br>
+',
+en=>'<br>
+An operational measures workflow is used to document changes and adjustments in the application environment.<br>The task can only be created by controlling roles (AM, TSM, OPM and their deputies) of the respective application.<br>
+<br><br>
+An operational action workflow can be used as an alternative for a "Change" if all of the following points are fulfilled:<br><br>
+<ul>
+<li>  Only ONE application is primarily affected by the measure.
+<li>  There are no tool-technical (measure workflow) reconciliations with other affected persons may be necessary.
+<li>  If several tasks can affect each other, they must be linked in the workflow (workflow relations).
+<li>  The measure must be documented in the tool BEFORE commencement.
+<li>  Collision check for other changes, change frequencies or measures was carried out independently in advance.
+<li>  The measure is performed without PSO (downtime of the application).
+</ul><br>
+<br>
+In general, the initial assignment of the tasks can only be done to persons in the direct environment of the affected application (this is already predefined by the workflow).<br>
+<br>
+The documentation of a measure does not protect against possible incidents. A measure must describe that all necessary steps have been taken to ensure safe and optimum operation.<br>
+<br>
+'},
+'assign measure to'=>{de=>'Maßnahme zuweisen an'},
+'derivation'=>{de=>'Ableitung'},
+'REV.derivation'=>{de=>'Abgeleitet von'},
+'info'=>{de=>'Informativer Verweis auf "%s"',en=>'informational link to "%s"'},
+'REV.info'=>{de=>'Informativ verwiesen von "%s"',en=>'informational linked from "%s"'},
+'invalid detail description for measure'=>{de=>'ungültige Detailbeschreibung der Maßname'},
+'planned start'=>{de=>'Geplanter Beginn'},
+'planned end'=>{de=>'Geplantes Ende'},
+'planned end must be behind planned start'=>{de=>'Geplantes Ende muss nach dem geplanten Beginn liegen'},
+'it is not allowed to delete this entry'=>{de=>'Es ist nicht erlaubt, diesen Eintrag zu löschen'},
+'planned start to far in the past'=>{de=>'Geplanter Beginn zu weit in der Vergangenheit'},
+'planned end to far in the future'=>{de=>'Geplantes Ende zu weit in der Zukunft'},
+'planned timerange'=>{de=>'geplannter Zeitraum'},

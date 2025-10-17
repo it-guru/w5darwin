@@ -1,0 +1,12 @@
+'itil::MyW5Base::coefforts'=>
+   {de=>'Tool: Arbeitszeitanalyse - (AER - Kostenstellen-/CO-Nummern bezogen)',
+    en=>'Tool: Worktimeanalyse - costcenter related'},
+'fieldgroup.efforts'=>{de=>'Arbeitsaufwand',
+                       en=>'efforts'},
+'Effort real'=>{de=>'erfasster Arbeitsaufwand'},
+'effectiv Effort'=>{de=>'effektiver Arbeitsaufwand'},
+'Effort employecount'=>{de=>'Anzahl berücksichtigter Mitarbeiter'},
+'Invoice Day'=>{de=>'Abrechnungstag'},
+'Timerange'=>{de=>'Zeitbereich'},
+'Orgunit'=>{de=>'Orgnisationsbereich'},
+'all calculations based on GMT'=>{de=>'alle Berechungen basieren auf GMT'},

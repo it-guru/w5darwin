@@ -1,0 +1,443 @@
+#!/usr/bin/env sh
+#
+#  '$Rev$'
+#  '$Date: 2010-07-12 11:05:13 +0200 (Mon, 12 Jul 2010) $'
+#
+
+#
+# Sample installation:
+# wget -O /usr/local/bin/cfmaccmgr \
+#    %%%PROT%%%://%%%HOST%%%/%%%CONFIG%%%/public/base/load/scriptpool/cfmaccmgr
+# chmod +x /usr/local/bin/cfmaccmgr
+# add to cron:
+# 5 * * * * cfmaccmgr -f '(groups="*.BS.BroadB" and posix="!hvogler !cbulla")'
+#
+
+TARGETPROT="%%%PROT%%%"
+TARGETHOST="%%%HOST%%%"
+TARGETPATH="/%%%CONFIG%%%/public/base/filesig/store"
+
+GROUP="w5usrmgr"
+
+
+
+if [ -r "/etc/cfmaccmgr.conf" ]; then
+   . /etc/cfmaccmgr.conf
+fi
+if [ -r "$HOME/.cfmaccmgr" ]; then
+   . $HOME/.cfmaccmgr
+fi
+PATH="/usr/bin:/usr/sbin:/bin:/usr/sbin:%PATH%"
+
+#
+# Parameters: [-d] [-g group] [-f] FILTER
+#
+
+########################################################################
+#
+# tmp file location
+#
+if [ "$TEMP" = "" ]; then
+   TEMP="/tmp"
+fi
+
+INOPT=0;
+while [ $INOPT != 1 ];  do
+   case "$1" in 
+      "-d" ) 
+         if [ "$DEBUG" = "" ]; then
+            DEBUG="1"
+         fi
+         shift
+      ;;
+
+      "-g" ) 
+         shift
+         GROUP=$1
+         shift
+      ;;
+
+      "-b" ) 
+         shift
+         BATCHMODE="1"
+         shift
+      ;;
+
+      "-k" ) 
+         shift
+         KEYAUTOCHANGE="1"
+      ;;
+
+      "-v" ) 
+         shift
+         VERBOSE="1"
+      ;;
+
+      "-f" )
+         if [ "$FORCE" = "1" ]; then
+            FORCE="2"
+         fi
+         if [ "$FORCE" = "" ]; then
+            FORCE="1"
+         fi 
+         shift
+      ;;
+
+      "-h" ) 
+         shift
+         echo "Usage: cfmaccmgr [-k] [-f] [-v] QUERY" >&2
+         echo "" >&2
+         echo "  -k allows SSH2 key changes automaticly" >&2
+         echo "  -f allows useradd and userdel operations" >&2
+         echo "  -f -f  processes userdel operations directly without waits" >&2
+         echo "  -v verbose execution" >&2
+         echo "  -h disyplay this help" >&2
+         echo "" >&2
+         echo "  Sample Querys:" >&2
+         echo "  ==============" >&2
+         echo "  * All business team users of the application W5Base/Darwin:">&2
+         echo "    '(appl=\"W5Base/Darwin\")'" >&2
+         echo "" >&2
+         exit 1
+      ;;
+
+      *) 
+         INOPT=1
+      ;;
+   esac
+done
+
+LABEL="$1"
+if [ "$LABEL" = "" ]; then
+   echo "ERROR: check call syntax - no parameters specified"
+   exit 1
+fi
+shift
+
+if [ "$1" = "" ]; then
+   QUERY="$LABEL"
+else
+   QUERY="$1"
+fi
+
+
+
+#
+# local username for transfer source
+#
+if [ "$USER" = "" ]; then
+   USER="`id -un`"
+fi
+if [ "$HOME" = "" ]; then
+   HOME=`eval echo ~$USER`
+fi
+
+# 
+# local hostname for transfer source
+#
+if [ "$HOSTNAME" = "" ]; then
+   HOSTNAME="`uname -n`"
+fi
+HOSTNAME=`echo $HOSTNAME | tr '[A-Z]' '[a-z]'`
+
+#
+# filenames for public and privat key
+#
+if [ "$COLLECTKEYFILE" = "" ]; then
+   COLLECTKEYFILE="$HOME/.cfmaccmgr-$USER-$HOSTNAME.key"
+fi
+if [ "$COLLECTPUBFILE" = "" ]; then
+   COLLECTPUBFILE="$HOME/.cfmaccmgr-$USER-$HOSTNAME.pem"
+fi
+if [ "$RANDFILE" = "" ]; then
+   RANDFILE="$TEMP/.rnd-$USER-$HOSTNAME"
+   touch $RANDFILE
+   export RANDFILE
+fi
+
+#
+# commands
+#
+if [ "$OPENSSL" = "" ]; then
+   OPENSSL="openssl"
+fi
+if [ "$NETCAT" = "" ]; then
+   NETCAT="netcat"
+fi
+if [ "$STAT" = "" ]; then
+   STAT="stat"
+fi
+
+OPENSSLOK=0
+if $OPENSSL version 2>&1| egrep -q '0\.9\.7' ; then
+   OPENSSLOK=1
+fi
+if $OPENSSL version 2>&1 | egrep -q '0\.9\.8' ; then
+   OPENSSLOK=1
+fi
+
+if [ $OPENSSLOK = 0 ]; then
+   echo "openssl not found in required version (min. 0.9.7)" >&2
+   exit 1
+fi
+
+
+
+########################################################################
+#
+# check if local keys are exists
+#
+if [ ! -f "$COLLECTKEYFILE" ]; then
+   OPENSSLCONF="$TEMP/.openssl.conf.$$"
+   echo "#opensslconf by cfmaccmgr : `date`"> $OPENSSLCONF
+   echo "[ req ]"                                               >> $OPENSSLCONF
+   echo "default_bits=1024"                                     >> $OPENSSLCONF
+   echo "default_md=md5"                                        >> $OPENSSLCONF
+   echo "string_mask=nombstr"                                   >> $OPENSSLCONF
+   echo "distinguished_name=req_distinguished_name"             >> $OPENSSLCONF
+   echo ""                                                      >> $OPENSSLCONF
+   echo "[ req_distinguished_name ]"                            >> $OPENSSLCONF
+   echo "0.organizationName = Organization Name (company)"      >> $OPENSSLCONF
+   echo "emailAddress=$USER@$HOSTNAME"                          >> $OPENSSLCONF
+   echo "localityName = Locality Name (city, district)"         >> $OPENSSLCONF
+   echo "countryName = Country Name (2 letter code)"            >> $OPENSSLCONF
+   echo "commonName = Common Name (hostname, IP, or your name)" >> $OPENSSLCONF
+   echo "countryName_default = DE"                              >> $OPENSSLCONF
+   echo "0.organizationName_default = DTAG"                     >> $OPENSSLCONF
+   echo "commonName_default =$USER@$HOSTNAME"                   >> $OPENSSLCONF
+   echo ""                                                      >> $OPENSSLCONF
+   echo "[ v3_ca ]"                                             >> $OPENSSLCONF
+   echo "basicConstraints = CA:TRUE"                            >> $OPENSSLCONF
+   echo "subjectKeyIdentifier = hash"                           >> $OPENSSLCONF
+   echo "authorityKeyIdentifier = keyid:always,issuer:always"   >> $OPENSSLCONF
+   if $OPENSSL req -x509 \
+               -config $OPENSSLCONF \
+               -nodes \
+               -days 365 \
+               -newkey rsa:1024 \
+               -batch \
+               -keyout $COLLECTKEYFILE -out $COLLECTPUBFILE ; then
+      echo "Key generated sucessfully"
+   else
+      echo "ERROR: unable to create privat key" >&2
+      exit 255
+   fi
+
+   #rm -f $OPENSSLCONF >/dev/null 2>&1
+
+fi
+
+if [ "$DEBUG" = "1" ]; then
+   echo "LABEL        =$LABEL"
+fi
+
+
+#######################################################################
+# TRANSPORT over netcat
+#######################################################################
+BUFFER="$TEMP/cfmaccmgr.$$"
+touch $BUFFER
+if [ "$QUERY" != "CLEAR" ]; then
+   umask 077
+   ( 
+   echo "CFMACCMGR1.0@@@itil::system@@@$HOSTNAME@@@CFMACCMGR"
+   echo "$QUERY"
+   ) | openssl enc -base64 | $OPENSSL smime -sign \
+       -signer $COLLECTPUBFILE -inkey $COLLECTKEYFILE \
+       -subject "(itil::system) $USER@$HOSTNAME:CFMACCMGR"> $BUFFER
+   LENGTH=`stat -c %s $BUFFER`
+
+
+   if [ "$TARGETPROT" = "http" ]; then
+      TRANSFERCMD="netcat -w 5 $TARGETHOST 80"
+   fi
+   if [ "$TARGETPROT" = "https" ]; then
+      if [ "$DEBUG" = "1" ]; then
+         TRANSFERCMD="openssl s_client -prexit -quiet -connect $TARGETHOST:443"
+      else
+         TRANSFERCMD="openssl s_client -prexit \
+                      -quiet -connect $TARGETHOST:443 2>&1"
+      fi
+   fi
+   if [ "$TRANSFERCMD" != "" ]; then
+      D=`(
+      echo "PUT $TARGETPROT://$TARGETHOST$TARGETPATH HTTP/1.0"
+      echo "Content-type: text/plain"
+      echo "Content-length: $LENGTH"
+      echo ""
+      cat $BUFFER
+      ) | eval $TRANSFERCMD `
+
+
+      echo "$D" |awk '
+      BEGIN{
+        FS=":";
+        out=0;
+        indata=0;
+      }
+      {
+         if (!indata){
+            if (match($0,/^[  \r\n]*$/)!=0){
+               indata=1;
+            }
+         }
+         else{
+            if ($1=="RESPONSE"){
+               out=1;
+               if ($2!="OK"){
+                  printf("%s ",$0) > "/dev/stderr";
+               }
+            }
+            else{
+               print $0;
+            }
+         }
+      }
+      END{
+         if (!out){
+            print("ERROR: unexpected protocol structure problem - contact admin!");
+         }
+      }
+      ' |sort| ( cat /dev/null > $BUFFER ; while read a; do
+         IFS=":"
+         set -- $a
+         if [ "$1" = "ACC" -a "$2" != "" ]; then
+            USER=$2
+            SSH2KEYOK="not stored"
+            if [ "$6" != "" ]; then
+               SSH2KEYOK="OK"
+            fi
+            if [ "$VERBOSE" = "1" ]; then
+               printf "process account %-10s - SSH2 Key $SSH2KEYOK\n" "'$USER'"
+            fi
+            if [ "$DEBUG" = "1" ]; then
+               echo "check account '$USER'" >&2
+            fi
+            echo "$2" >> $BUFFER
+            if [ -n $user ] && ! id $2 >/dev/null 2>&1 ; then
+               if [ "$FORCE" ]; then
+                  if ! egrep "^$GROUP:" /etc/group >/dev/null 2>&1; then
+                     groupadd $GROUP
+                  fi
+                  printf "Try to add user account $2 ..."
+                  if useradd -g $GROUP -m "$2"; then
+                     echo "OK" 
+                  else
+                     echo ""
+                     echo "useradd $USER failed" 
+                  fi
+               else
+                  echo "W5Base requested add of $2 user account." 
+               fi
+            fi
+            USERHOME=`eval echo ~$USER`
+            if [ -d $USERHOME ]; then
+               if [ ! -d $USERHOME/.ssh ]; then
+                  mkdir $USERHOME/.ssh
+                  chown $USER $USERHOME/.ssh
+                  chmod 700 $USERHOME/.ssh
+               fi
+               if [ -d $USERHOME/.ssh ]; then
+                  if [ ! -f $USERHOME/.ssh/authorized_keys2 ]; then
+                     if [ "$6" != "" ]; then
+                        echo "$6" > $USERHOME/.ssh/authorized_keys2
+                        chown $USER  $USERHOME/.ssh/authorized_keys2
+                        chmod 600 $USERHOME/.ssh/authorized_keys2
+                     fi
+                  else
+                     if [ -f $USERHOME/.ssh/authorized_keys2 ]; then
+                        echo "$6" > $USERHOME/.ssh/authorized_keys2.req
+                        chown $USER  $USERHOME/.ssh/authorized_keys2.req
+                        chmod 600 $USERHOME/.ssh/authorized_keys2.req
+                        if ! diff $USERHOME/.ssh/authorized_keys2.req \
+                                  $USERHOME/.ssh/authorized_keys2 > /dev/null; then
+                           FOUNDKEYDIFF=1
+                           if [ "$KEYAUTOCHANGE" = "1" ]; then
+                              if [ -s $USERHOME/.ssh/authorized_keys2 ]; then
+                                 mv $USERHOME/.ssh/authorized_keys2.req \
+                                    $USERHOME/.ssh/authorized_keys2 && \
+                                 echo "SSH2 Key for user $USER has been changed." >&2
+                              else
+                                 mv $USERHOME/.ssh/authorized_keys2.req \
+                                    $USERHOME/.ssh/authorized_keys2 
+                              fi
+                           else
+                              echo "SSH2 key for user $USER change requested." >&2
+                              echo "use -k switch, to allow automatic key changes." >&2
+                           fi
+                        fi
+                        rm $USERHOME/.ssh/authorized_keys2.req 2>/dev/null
+                     fi
+                  fi
+               fi
+            else
+               echo "homedir of $USER can not be found"
+            fi
+         fi
+      done )
+
+   fi
+   if [ ! -s $BUFFER ]; then
+      echo "" >&2
+      echo "WARNING: there is maybee a query problem!" >&2
+   fi
+fi
+
+
+GROUPID=`cat /etc/group | egrep "^$GROUP" | cut -f 3 -d:`
+CLEANUPFILE=$HOME/.cfmaccmgr.cleanupstate.$GROUP
+touch $CLEANUPFILE
+if [ -n "$GROUPID" ]; then
+   for USER in `cat /etc/passwd | cut -f1 -d:`; do
+      if [ "`id -gn $USER`" = "$GROUP" ]; then
+         if ! egrep -q "^$USER$" $BUFFER; then
+            if ! egrep -q "^$USER:" $CLEANUPFILE; then
+               echo "$USER:1" >> $CLEANUPFILE
+            else
+               OLD=`cat $CLEANUPFILE | egrep "^$USER:" | \
+                    cut -f 2 -d:` 
+               NEW=`expr $OLD + 1`
+               mv $CLEANUPFILE $CLEANUPFILE.bak
+               cat $CLEANUPFILE.bak | \
+                   egrep -v "^$USER:" > $CLEANUPFILE
+               echo "$USER:$NEW" >> $CLEANUPFILE
+               rm $CLEANUPFILE.bak
+            fi
+            CLEANUPCOUNT=`cat $CLEANUPFILE | egrep "^$USER:" | \
+                          cut -f 2 -d:`
+
+            if [ \( "$FORCE" = "1" -a "$CLEANUPCOUNT" -gt 6 \) -o \
+                   "$FORCE" = "2" ]; then
+               printf  "Try to remove account $USER ..." 
+               if userdel -f -r $USER ; then
+                  echo "OK" 
+                  CLEANUPCOUNT=0
+               else
+                  echo ""
+                  echo "userdel $USER failed" 
+               fi
+            fi
+            if [  "$CLEANUPCOUNT" -gt 2 ]; then
+               printf "W5Base requested %d times to remove account $USER!" \
+                      $CLEANUPCOUNT
+               if [ "$FORCE" = "1" ]; then
+                  printf " Remove will be done at 7st!"
+               fi
+               printf "\n"
+            fi
+         else
+            mv $CLEANUPFILE $CLEANUPFILE.bak
+            cat $CLEANUPFILE.bak | \
+                egrep -v "^$USER:" > $CLEANUPFILE
+            rm $CLEANUPFILE.bak
+         fi
+      fi
+   done
+fi
+
+
+   
+rm $BUFFER
+
+
+

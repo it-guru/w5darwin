@@ -1,0 +1,143 @@
+body{
+}
+p{
+   color:black;
+}
+h1{
+   text-align:center;
+   margin-bottom:20px;
+   font-size:18px;
+}
+h2{
+   font-weight:bold;
+}
+h3{
+   text-decoration:underline;
+}
+div.disclaimer{
+   border-style:solid;
+   border-width:1px;
+   border-color:gray;
+   margin-top:5px;
+   margin-bottom:2px;
+   padding:4px;
+}
+div.lnkdocument{
+   margin-top:5px;
+   max-width:600px;
+   padding:5px;
+   margin:5px;
+   margin-right:0px;
+/*   border-style:solid;
+   border-width:1px;
+   border-color:gray;*/
+}
+div.desc{
+   font-size:12px;
+   font-weight:normal;
+   margin-bottom:40px;
+}
+ol.appl{
+   margin-top:20px;
+   margin-bottom:20px;
+   padding-left:25px;
+}
+ol.appl li,
+ol.appl li h1{
+   font-size:15px;
+   font-weight:bold;
+   text-align:left;
+}
+ol.appl li h2{
+   font-size:12px;
+   font-weight:bold;
+   text-decoration:underline;
+}
+ol.appl li div{
+   font-size:12px;
+   font-weight:normal;
+}
+ol.lnkapplappl{
+   margin-top:5px;
+   margin-bottom:20px;
+   padding-left:20px;
+}
+ol.lnkapplappl li,
+ol.lnkapplappl li h1{
+   font-size:12px;
+   font-weight:bold;
+}
+ol.lnkapplappl ul li{
+   font-weight:normal;
+}
+div.comments{
+   margin-top:1px;
+   margin-bottom:20px;
+   font-weight:normal;
+   color:black;
+   font-size:11px;
+}
+p.attention{
+   font-weight:normal;
+   color:red;
+   font-size:9px;
+}
+table.subscriber{
+   width:100%;
+   border-spacing:0;
+   border-collapse:collapse;
+}
+table.subscriber td{
+   width:50%;
+   text-align:center;
+   border:1px solid gray;
+}
+div.htmldescription{
+   border-left-style:solid;
+   border-left-width:1px;
+   border-left-color:gray;
+   margin-top:20px;
+   margin-bottom:2px;
+   padding:4px;
+}
+div.htmldescription h4{
+   display:block;
+   margin:0px;
+   margin-top:1.33em;
+   font-weight:bold;
+   font-size:12px
+}
+
+img.logo{
+   margin-left:5px;
+   border-style:solid;
+   border-width:1px;
+   border-color:gray;
+}
+div.subscriber{
+   display:none;
+   visibility:hidden;
+}
+div.param{
+   font-weight:normal;
+   color:black;
+   font-size:11px;
+}
+div.param span{
+   font-weight:bold;
+   margin-right:10px;
+}
+@media print{
+   body{
+      overflow:visible;
+      background:#ffffff;
+   }
+   div.doc{
+      min-height:600px;
+   }
+   div.subscriber{
+      width:100%;
+      display:block;
+      visibility:visible;
+   }
+}

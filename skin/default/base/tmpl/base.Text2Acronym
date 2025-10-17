@@ -1,0 +1,25 @@
+<script language=JavaScript src="../../../../public/base/load/TextTranslation.js"></script>
+<script language=JavaScript>
+function loading (tstring)
+{
+   var obj=document.getElementById('loading');
+   if (obj.hasChildNodes()){
+      obj.firstChild.nodeValue=tstring;
+   }else{
+      obj.appendChild(document.createTextNode(tstring))
+   }
+}
+</script>
+<table border=0 width=100%>
+<tr><td colspan=4 height=30></td></tr>
+<tr><td colspan=4 align=center><b>Acronym Creator</b></td></tr>
+<tr><td colspan=4 height=30></td></tr>
+<tr><td colspan=4 align=center>
+<form>
+Keywords: <input name=src size=30 maxlength=30></input>
+<input type=submit value=" create " onclick="loading('loading...')">
+</form></td></tr>
+<tr>
+   <td colspan=4 align=center height=50><div id="loading"></div></td>
+</tr>
+%acywords%

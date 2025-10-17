@@ -1,0 +1,275 @@
+#!/usr/bin/perl
+
+use strict;
+use Git;
+use Data::Dumper;
+
+sub in_array
+{
+   my ($arr,$search_for) = @_;
+   $arr=[$arr] if (ref($arr) ne "ARRAY");
+   my %items;
+   map({$items{$_}++} @$arr); # create a hash out of the array values
+   if (ref($search_for) eq "ARRAY"){
+      foreach my $search_for_loop (@$search_for){
+         return(1) if (exists($items{$search_for_loop}));
+      }
+      return(0);
+   }
+   return(exists($items{$search_for})?1:0);
+}
+
+
+use vars qw($opt_d $opt_h $opt_v $opt_f);
+use Getopt::Long;
+#$ENV{PATH}="/usr/bin:/bin:/usr/contrib/bin:/usr/sbin:/sbin:".
+#           "/usr/local/bin:/usr/local/sbin:/opt/openssh/bin:".
+#           "/opt/ssh/bin/usr/local/ssh/bin";
+my @ARGV_bak=@ARGV;
+exit(1) if (!GetOptions('verbose'=>\$opt_v,
+                        'debug'=>\$opt_d,
+                        'force'=>\$opt_f,
+                        'help'=>\$opt_h));
+my @picklst=@ARGV;
+
+
+my $version = Git::command_oneline('version');
+my $repo = Git->repository();
+my $wc_path = $repo->wc_path();
+my $branch = $repo->command_oneline("rev-parse","--abbrev-ref","HEAD");
+my $masterbranch="master";
+
+if ($opt_v){
+   printf("git version: $version\n");
+   printf("git path   : $wc_path\n");
+   printf("git branch : $branch\n");
+   printf("\n");
+}
+
+if ($branch eq "" || $branch eq "master"){
+   printf STDERR ("ERROR: current branch is '%s' - you can not pick in this brach\n",
+      $branch);
+   exit(1);
+}
+
+my %commitlst;
+my %commitdt;
+my @commitlst=$repo->command("log","--cherry-pick",
+                             "--format=format:%H",
+                             "--right-only",
+                             "--no-merges",
+                             "--reverse",
+                             $branch."...".$masterbranch);
+
+#
+# With ...
+#
+# git cherry-pick --keep-redundant-commits -X ours -x xxxxxxx
+#
+# ... commits can be "marked" as cherry-picked - if missequenced cherry-picks
+# are killed corred patch-id handling. The following git-log-grep sequence
+# filter them out
+#
+
+if ($#commitlst!=-1){
+   if ($opt_d){
+      printf STDERR ("DEBUG: filter commit list, against already empty cerry-pickeds\n");
+   }
+   for(my $c=0;$c<=$#commitlst;$c++){
+      if ($opt_d){
+         printf STDERR ("DEBUG: check $c commit %s\n",$commitlst[$c]);
+      }
+      my @g=$repo->command("log",$branch,
+                           "--grep","(cherry picked from commit ".$commitlst[$c].")");
+      if ($#g!=-1){ # the commit seems to be cherry-picked as empty patch 
+         if ($opt_v){
+            printf("INFO: commit %s removed due empty cherry-picked\n",$commitlst[$c]);
+         }
+         $commitlst[$c]=undef;
+      }
+   }
+   @commitlst=grep({defined($_)} @commitlst);
+}
+
+
+if ($opt_v){
+   printf STDERR ("git found %d missing commit-picks in current branch egainst '%s'\n",
+      $#commitlst+1,$masterbranch);
+}
+
+if ($#commitlst==-1){
+   printf STDERR ("ERROR: no posible commits to cherry-pick\n");
+   exit(1);
+}
+
+if ($#picklst==-1){
+   system("git log --cherry-pick --reverse --no-merges --date-order --oneline --right-only ${branch}...master");
+   exit(0);
+}
+
+foreach my $commsha (@commitlst){
+   my @files=$repo->command("diff-tree","--no-commit-id","--name-only","-r",$commsha);
+   $commitlst{$commsha}=\@files;
+   my $tstamp=$repo->command_oneline("show","-s",'--format="%cd"',$commsha);
+   $commitdt{$commsha}=$tstamp;
+}
+
+
+if ($#picklst==0 && $picklst[0] eq "tree"){
+   my %isdep;
+   my %deplst;
+   my $c=0;
+   for(my $shapoint=0;$shapoint<=$#commitlst;$shapoint++){
+      my $commsha=$commitlst[$shapoint];
+      next if (exists($isdep{$commsha}));
+
+      my @f=@{$commitlst{$commsha}};
+      my @dep=();
+      for(my $chkpoint=$shapoint+1;$chkpoint<=$#commitlst;$chkpoint++){
+         my $chksha=$commitlst[$chkpoint];
+         if (in_array(\@f,$commitlst{$chksha})){
+            $isdep{$chksha}++;
+            push(@f,@{$commitlst{$chksha}});
+            push(@dep,$chksha);
+         }
+      }
+
+      $deplst{$commsha}={};
+      my $k=$deplst{$commsha};
+      foreach my $dep (@dep){
+         if (!exists($k->{$dep})){
+            $k->{$dep}={};
+         }
+         $k=$k->{$dep};
+      }
+   }
+   
+
+   #print Dumper(\%commitlst);
+   #print Dumper(\%deplst);
+   my $indent=0;
+   my $dep=\%deplst;
+
+   sub showDepEnt
+   {
+      my $indent=shift;
+      my $deplst=shift;
+      my $path=shift;
+
+      if (!defined($path)){
+         $path=[];
+      }
+
+      foreach my $k (keys(%$deplst)){
+         #printf("%s%s %s\n"," " x $indent,$k);
+         my $l=`git log -1 --oneline "$k"`;
+         $l=~s/\s*$//;
+         if (length($l)+$indent>77){
+            $l=substr($l,0,77-$indent)."...";
+         }
+         printf("%s%s\n"," " x $indent,$l);
+         push(@$path,$k);
+         if (ref($deplst->{$k}) eq "HASH"){
+            showDepEnt($indent+1,$deplst->{$k},$path);
+         }
+         if ($indent==0){
+            if ($#$path>0){
+               printf("\n-> %s\n",join(" ",@$path));
+            }
+            $path=[];
+            printf("\n\n");
+         }
+      }
+
+   }
+   showDepEnt($indent,$dep);
+   
+
+   exit(0);
+}
+
+
+
+
+
+#
+# Posible expand picklist;
+#
+for(my $c=0;$c<=$#picklst;$c++){
+   for(my $s=0;$s<=$#commitlst;$s++){
+      if (substr($commitlst[$s],0,length($picklst[$c])) eq $picklst[$c] &&
+          $commitlst[$s] ne $picklst[$c]){
+         printf("INFO: expand %s to %s\n",$picklst[$c],$commitlst[$s]);
+         $picklst[$c]=$commitlst[$s];
+      }
+   }
+}
+
+# Check posibility and order picks
+my %reqcommids;
+foreach my $commsha (@picklst){
+   if (!exists($commitlst{$commsha})){
+      printf STDERR ("ERROR: commit id '%s' not in posible commit id list\n",$commsha);
+      exit(1);
+   }
+   else{
+      $reqcommids{$commsha}++;
+   }
+}
+@picklst=grep({exists($reqcommids{$_})} @commitlst);
+
+if ($opt_v){
+   printf("cherry-pick order:\n");
+   for(my $c=0;$c<=$#picklst;$c++){
+      printf STDERR ("   %02d: %s (%s)\n",$c,$picklst[$c],$commitdt{$picklst[$c]});
+   }
+}
+
+
+# checking cherry-pick alloed
+
+for(my $c=0;$c<=$#picklst;$c++){
+   my $files=$commitlst{$picklst[$c]};
+   my $incheck=0;
+   for(my $s=$#commitlst;$s>=0;$s--){ 
+      if ($picklst[$c] eq $commitlst[$s]){
+         $incheck=1;
+      }
+      else{
+         if ($incheck){
+            if (in_array($files,$commitlst{$commitlst[$s]})){
+               if (!in_array(\@picklst,$commitlst[$s])){
+                  if (!$opt_f){
+                     printf STDERR ("ERROR: %s (%s) is not allowed for cherry-pick\n",
+                        $picklst[$c],$commitdt{$picklst[$c]});
+                     printf STDERR ("       %s (%s) works on the at least on same file\n",
+                        $commitlst[$s],$commitdt{$commitlst[$s]});
+                     exit(1);
+                  }
+               }
+            }
+         }
+      }
+   }
+}
+
+if ($opt_v){
+   printf("\nOK, all picks are allowed and in correct order\n");
+}
+
+printf("\n\ncherry-pick -x ".join(" ",@picklst));
+
+for(my $c=0;$c<=$#picklst;$c++){
+   #my @out=$repo->command("cherry-pick","-x","-X","theirs",$picklst[$c]);
+   my @out=$repo->command("cherry-pick","-x",$picklst[$c]);
+   printf("%s\n",join("\n",@out));
+}
+
+
+
+
+
+#print Dumper(\@commitlst);
+#print Dumper(\%commitlst);
+
+

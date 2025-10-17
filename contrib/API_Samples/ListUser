@@ -1,0 +1,109 @@
+#!/usr/bin/perl
+use lib qw(/opt/w5base2/lib /opt/w5base/lib);
+use strict;                   
+use W5Base::API;
+use W5Kernel;
+
+my $DefaultBase="https://w5base.net/w5base/auth/";
+my ($help,$verbose,$loginuser,$loginpass,$quiet,$base,$lang);
+my %P=("help"=>\$help,"base=s"=>\$base,"lang=s"=>\$lang,
+       "webuser=s"=>\$loginuser,"webpass=s"=> \$loginpass,
+       "verbose+"=>\$verbose);
+my $optresult=XGetOptions(\%P,\&Help,undef,undef,".W5Base.Interface");
+
+#######################################################################
+# create connection config
+#
+my $apidebug=$verbose>=3 ? 1 : 0;
+my $Config=createConfig($base,$loginuser,$loginpass,$lang,$apidebug,
+                        undef,undef,timeout=>1000);
+if (!defined($Config)){
+   msg(ERROR,"base or username/password is not valid");exit(1);
+}
+else{
+   msg(DEBUG,"create of config ok");
+}
+msg(DEBUG,"verbose=$verbose");
+
+
+#######################################################################
+# load ModuleObject
+#
+my $objectname="base::user";
+my $user=getModuleObject($Config,$objectname);
+if (!defined($user)){
+   msg(ERROR,"can't load object $objectname");exit(2);
+}
+else{
+   msg(DEBUG,"create of ModuleObject $user ok");
+}
+
+my $flt=$ARGV[0];
+if ($flt eq ""){
+   msg(ERROR,"no filter specified");exit(3);
+}
+
+
+#######################################################################
+# show fields
+#
+if (my @fields=$user->showFields()){
+   print("Fields in $objectname\n");
+   foreach my $field (@fields){
+      printf("%-25s: %-20s: %s\n",
+             $field->{name},$field->{group},$field->{longtype});
+   }
+   print("\n");
+}
+$user->dieOnERROR();
+
+
+#######################################################################
+# do search
+#
+$user->SetFilter({fullname=>$flt});
+my $st=0;
+my $blk=50;
+my @l;
+do{
+   $user->Limit($st+$blk,$st);
+   if (@l=$user->getHashList(qw(fullname surname accounts userid creator))){
+      if ($#l==-1){
+         msg(INFO,"no data found in $objectname matching fullname=$flt");
+         exit(2);
+      }
+      else{
+         foreach my $rec (@l){
+             printf("%s  (%s) $rec->{creator}\n",UTF8toLatin1($rec->{fullname}),$rec->{userid});
+             if (ref($rec->{accounts}) eq "ARRAY"){
+                foreach my $arec (@{$rec->{accounts}}){
+                   printf(" - $arec->{account}\n");
+                }
+             }
+         }
+      }
+   }
+   $st+=$blk;
+}while($#l==$blk-1);
+$user->dieOnERROR();
+exit(0);
+
+#######################################################################
+sub Help
+{
+   print(<<EOF);
+$RealScript [options] FullnameFilter
+
+   --verbose display more details of operation process
+   --quiet   only errors would be displayed
+   --base    base url of filemgmt (default: $DefaultBase)
+
+   --webuser username
+   --webpass password
+   --store   stores the parameters (not help,verbose and store)
+   --help    show this help
+
+EOF
+}
+#######################################################################
+exit(255);

@@ -1,0 +1,67 @@
+.attachments{
+   margin-top:15px;
+}
+.fullview{
+   width:610px;
+}
+.authorline{
+   font-size:11px;
+   margin-top:4px; 
+   height:20px;
+   font-style:italic;
+}
+.further{
+   padding:5px;
+   margin:5px;
+   margin-top:30px;
+   background-color:lightgray;
+   width:93%;
+   max-width:580px;
+   overflow:auto;
+}
+li{
+   margin-top:3px;
+   margin-bottom:3px;
+}
+.thumbnail{
+   margin:15px;
+   margin-top:2px;
+   margin-bottom:2px;
+}
+#WindowTitle, a:link.WindowTitle, a:visited.WindowTitle, a:active.WindowTitle  {
+   font-size:18px;
+   text-weight:bold;
+   text-decoration:none;
+   color:black;
+}
+#WindowSignature{
+   margin-top:10px;
+   font-size:10px;
+   text-align:right;
+   display:none;
+   visibility:hidden;
+}
+a:link.attlink, a:visited.attlink, a:active.attlink  {
+            font-family:Arial,Adobe Helvetica,Helvetica;
+            color:black;
+            text-decoration:none;
+          }
+
+@media print {
+   #WindowSignature{
+      display:block;
+      visibility:visible;
+   }
+   .further{
+      display:none;
+      visibility:hidden;
+   }
+   .fullview{
+      width:655px;
+      background-color:#ffffff;
+   }
+   body{
+      background-color:#ffffff;
+   }
+}
+

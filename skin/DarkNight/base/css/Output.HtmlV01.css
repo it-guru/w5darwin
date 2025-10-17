@@ -1,0 +1,11 @@
+@import url("Output.HtmlV01.css?SKIN=default");
+body{
+    background: #383638;
+    color:black;
+}
+
+tr.linehighlight{
+   background:silver;
+   cursor:pointer;
+}
+
