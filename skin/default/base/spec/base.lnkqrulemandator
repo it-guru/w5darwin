@@ -1,7 +1,0 @@
-#######################################################################
-'dataobj'=>{de=>'
-Der interne Datenobjekt name in der Notation z.B. base::user
-',en=>'
-The internal dataobject name in notation f.e. base::user
-'},
-

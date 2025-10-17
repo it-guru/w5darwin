@@ -1,7 +1,0 @@
-'itil::lnkassetasset'=>{
-de=>'Asset Zusammenstellung',
-en=>'csset compose',
-},
-'parent asset'=>{de=>'Asset'},
-'compose asset'=>{de=>'Teil-Asset'},
-'compose asset location'=>{de=>'Teil-Asset Standort'},

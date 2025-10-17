@@ -1,9 +1,0 @@
-'base::note'=>{de=>'Datensatz Notiz/Private Information',en=>'Record note/Privat Info'},
-'Label'=>{de=>'Überschrift'},
-'Note'=>{de=>'Notiz'},
-'direct display'=>{de=>'direkt sichtbar'},
-'share with group'=>{de=>'teilen mit Gruppe'},
-'parent object'=>{de=>'Elternobjekt'},
-'parent id'=>{de=>'Referenz ID'},
-'fieldgroup.rel'=>{de=>'Objekt Relation',en=>'Object relation'},
-

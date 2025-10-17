@@ -1,8 +1,0 @@
-'itil::licproduct'=>{de=>'Lizenz Produkt',en=>'License product'},
-'Producer'=>{de=>'Hersteller'},
-'Product family'=>{de=>'Produktfamilie'},
-'Licensemetric'=>{de=>'Lizenzmetrik'},
-'Item/Order-No.'=>{de=>'Artikel-/Bestellnummer'},
-'invalid producer specified'=>{de=>'ungültiger Hersteller angegeben'},
-'not unique srcid'=>{de=>'nicht eindeutige ID im Quellsystem'},
-'none existing srcid'=>{de=>'nicht existierende ID im Quellsystem'},
