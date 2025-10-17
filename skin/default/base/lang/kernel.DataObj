@@ -1,0 +1,53 @@
+'Output format selection'=>{de=>'Ausgabeformat auswahl'},
+'illegal usage of comparison operator'=>{de=>'ungültige Verwendung eines Vergleichsoperators'},
+'MSG001'=>{de=>'Ansichten-Bearbeitung-Datenobjekt:',en=>'View-Edit-Dataobject:'},
+'MSG002'=>{de=>'View-Auswahl:',en=>'View-List:'},
+'MSG003'=>{de=><<EOF,
+Um einen neue 'Ansicht' hinzuzufügen, geben Sie
+bitte den neuen Namen der 'Ansicht' ein, und klicken
+dann auf 'Hinzufügen'.<br>
+<br>
+Um eine bestehende 'Ansicht' zu verändern, klicken
+Sie diese bitte in der Auflistung an, führen die
+Anpassungen durch, und klicken dann auf 'Speichern'.
+Über den Button 'Löschen' kann dann auch eine
+'Ansicht' gelöscht werden.'}
+
+EOF
+           en=><<EOF},
+To use a new 'View', enter the name<br> 
+for the new 'View' and click 'add'.<br>
+To edit a 'View', choose the 'View' <br>
+in the 'View-List', make your changes <br>
+and click 'Save'. Click 'Delete' to<br>
+erase a 'View'.
+EOF
+'MSG004'=>{de=>'Verfügbare Felder:',en=>'Available Fields:'},
+'MSG005'=>{de=>'Felder der aktuellen Ansicht:',en=>'Fields of current View:'},
+'History'=>{de=>'Verlauf'},
+'Context map'=>{de=>'Kontext-Map'},
+'you are not autorized to delete the requested record'=>{de=>'Sie sind nicht berechtigt, den angeforderten Datensatz zu löschen'},
+'you are not autorized to insert the requested record'=>{de=>'Sie sind nicht berechtig den angeforderten Datensatz zu erzeugen'},
+'New'=>{de=>'Neueingabe'},
+"structure error in []"=>{de=>"Strukturfehler in []"},
+"structure error in ()"=>{de=>"Strukturfehler in ()"},
+"structure error while closing []"=>{de=>"Strukturfehler beim Schließen von []"},
+"or not allowed at begin of expression"=>{de=>"OR darf nicht am Anfang des Ausdruckes stehen"},
+"invalid attribute '\%s' used"=>{de=>"ungültiges Feld '\%s' verwendet"},
+"multiple definition of same attribute"=>{de=>"Mehrfachdefinition des gleichen Feldes"},
+"write request to field '\%s' rejected"=>{de=>"Schreibzugriff auf das Feld '\%s' ist nicht zulässig"},
+'next page'=>{de=>'vorwärts'},
+'previous page'=>{de=>'zurück'},
+'Total: %d records'=>{de=>'Gesamtanzahl: %d Datens&auml;tze',
+                      en=>'Total: %d records'},
+'Total: &gt;%d records'=>{de=>'Gesamtanzahl &gt;%d Datens&auml;tze',
+                      en=>'Total &gt;%d records'},
+'Automatic data update'=>{de=>'Automatisches Daten-Update'},
+'based on datasource'=>{de=>'basierend auf der Datenquelle'},
+'based on QualityRule'=>{de=>'basierend auf der QualityRule'},
+'old value'=>{de=>'alter Inhalt'},
+'new value'=>{de=>'neuer Inhalt'},
+'the datasource'=>{de=>'die Datenquelle'},
+'For Details of underlying ruleset, check QualityRule'=>{de=>'Nähere Informationen zum zugrundeligenden Regelwerk, finden Sie in der QualityRule'},
+'invalid individual Attribut'=>{de=>'ungültiges Individual Attribut'},
+'you are not autorized to update the requested record'=>{de=>'Sie sind nicht berechtigt, den angeforderten Datensatz zu aktualisieren'},

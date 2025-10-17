@@ -1,0 +1,34 @@
+'itil::applwallet'=>{de=>'Anwendung-Zertifikat',en=>'Application certificate'},
+'fieldgroup.detail'=>{de=>'Detailinformationen',en=>'Detail informations'},
+'Application'=>{de=>'Anwendung'},
+'Owner'=>{de=>'Besitzer'},
+'Certificate begin'=>{de=>'Zertifikat Beginn'},
+'Certificate end'=>{de=>'Zertifikat Ende'},
+'Certificate file'=>{de=>'Zertifikats-Datei'},
+'Brief description'=>{de=>'Kurzbeschreibung'},
+'Comments'=>{de=>'Bemerkungen'},
+'Issuer'=>{de=>'Aussteller'},
+'alternate Names'=>{de=>'alternative Namen'},
+'Serial Nr.'=>{de=>'Serien-Nr.'},
+'No certificate file selected'=>{de=>"Keine Zertifikats-Datei ausgewählt"},
+'No brief description specified'=>{de=>"Keine Kurzbeschreibung angegeben"},
+'Validity date is not interpretable'=>{
+   de=>'Das Gültigkeitsdatum ist nicht interpretierbar'
+},
+'Certificate expires soon'=>{
+   de=>'Das Zertifikat läuft bald ab'},
+'Certificate has already expired'=>{
+   de=>'Das Zertifikat ist bereits abgelaufen'},
+'No write access on specified application'=>{
+   de=>'Kein Schreibzugriff auf die angegebene Anwendung'},
+'Notification of Certificate Expiration'=>{
+   de=>'Benachrichtigung über Zertifikatsverfall'},
+'Unknown file format'=>{de=>'Unbekanntes Dateiformat'},
+'Issuer DN'=>{de=>'Aussteller DN'},
+'SSL Expiration notify lead time'=>{de=>'SSL Verfallsbenachrichtigung Vorlaufzeit'},
+'Expiration notify lead time'=>{de=>'Verfallsbenachrichtigung Vorlaufzeit'},
+'EXPNOTIFYLEAD.14'=>{de=>'2 Wochen',en=>'2 weeks'},
+'EXPNOTIFYLEAD.21'=>{de=>'3 Wochen',en=>'3 weeks'},
+'EXPNOTIFYLEAD.28'=>{de=>'4 Wochen',en=>'4 weeks'},
+'EXPNOTIFYLEAD.56'=>{de=>'8 Wochen',en=>'8 weeks'},
+'EXPNOTIFYLEAD.70'=>{de=>'10 Wochen',en=>'10 weeks'},

@@ -1,0 +1,199 @@
+#!/usr/bin/env perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use RPC::Smart::Client;
+use Sys::Hostname;
+use strict;
+use kernel;
+use kernel::config;
+use Getopt::Long;
+use vars qw($opt_v $opt_h $opt_s $opt_c $opt_n $opt_nwin $configname
+            $W5ServerHost $W5ServerPort);
+
+
+$0="W5ServerClient ".join(" ",@ARGV);
+
+exit(1) if (!GetOptions('verbose'=>\$opt_v,
+                        'debug'=>\$opt_v,
+                        'noconnecterror'=>\$opt_n,
+                        'allowerrorwin=s'=>\$opt_nwin,
+                        'showconfig'=>\$opt_s,
+                        'W5ServerHost=s'=>\$W5ServerHost,
+                        'W5ServerPort=s'=>\$W5ServerPort,
+                        'help'=>\$opt_h,
+                        'config=s'=>\$opt_c));
+
+if ($opt_nwin eq ""){
+   $opt_nwin="0-23";
+}
+
+if ($opt_v){
+   $W5V2::Debug=1;
+}
+else{
+   $W5V2::Debug=0;
+}
+if (defined($opt_h)){
+   help();
+   exit(1);
+}
+
+my ($opt_nwin_from,$opt_nwin_to);
+
+if (!(($opt_nwin_from,$opt_nwin_to)=$opt_nwin=~m/^([0-9]+)-([0-9]+)$/)){
+   msg(ERROR,"can't interprete allowerrorwin '%s'",$opt_nwin);
+   exit(1);
+}
+
+if ($opt_nwin_from<0 || $opt_nwin_from>23){
+   msg(ERROR,"can't interprete allowerrorwin from '%s' out of range 0-23",
+       $opt_nwin_from);
+   exit(1);
+}
+
+if ($opt_nwin_to<0 || $opt_nwin_to>23){
+   msg(ERROR,"can't interprete allowerrorwin to '%s' out of range 0-23",
+       $opt_nwin_to);
+   exit(1);
+}
+
+if ($opt_nwin_from>$opt_nwin_to){
+   msg(ERROR,"can't interprete allowerrorwin '%s' not in serial",
+       $opt_nwin);
+   exit(1);
+}
+
+my (undef,undef,$utchour) = gmtime(time());
+
+if ($opt_n){
+   msg(DEBUG,"opt_nwin      = ".$opt_nwin);
+   msg(DEBUG,"opt_nwin_from = ".$opt_nwin_from);
+   msg(DEBUG,"opt_nwin_to   = ".$opt_nwin_to);
+   msg(DEBUG,"cur UTC hour  = ".$utchour);
+}
+
+
+if ($opt_c eq ""){
+   $opt_c="w5server";
+}
+$configname=$opt_c;
+
+my %ClientParam=();
+
+my $configcheck=new kernel::config();
+
+if (!$configcheck->readconfig("$FindBin::Bin/..",$configname)){
+   msg(ERROR,"can't read configfile '%s'",$configname);
+   exit(1);
+}
+if (defined($opt_s)){
+   showConfig($configcheck);
+   exit(1);
+}
+
+my $port;
+{
+   $port=$configcheck->Param("W5SERVERPORT");
+   $port=4711 if ($port eq "");
+   if (defined($W5ServerPort) && $W5ServerPort ne ""){ 
+      $port=$W5ServerPort;
+   }
+   msg(DEBUG,"W5ServerPort=%s",$port);
+   $ClientParam{'PeerPort'}=$port;
+}
+
+my $host;
+{
+   $host=$configcheck->Param("W5SERVERHOST");
+   $host="localhost" if ($host eq "");
+   if (defined($W5ServerHost) && $W5ServerHost ne ""){ 
+      $host=$W5ServerHost;
+   }
+   msg(DEBUG,"W5ServerHost=%s",$host);
+   $ClientParam{'PeerAddr'}=$host;
+}
+
+my $MyClient=new RPC::Smart::Client(%ClientParam);
+
+if (! defined($MyClient->Connect())){
+   if (!($opt_n) || ($opt_n && (
+        ($utchour<$opt_nwin_from)||($utchour>$opt_nwin_to)
+       ))
+      ){
+      msg(ERROR,"can't connect from ".hostname()." to W5Server '".
+                $ClientParam{'PeerAddr'}."'");
+   }
+   exit(1);
+}
+my $method=shift(@ARGV);
+msg(DEBUG,"call method %s(%s)",$method,join(",",@ARGV));
+my $res=$MyClient->Call($method,@ARGV);
+if (!defined($res)){
+   msg(ERROR,"comunication error to $host:$port - result was undefined");
+   exit(1);
+}
+printf("%s",Dumper($res)) if ($W5V2::Debug);
+if ($res->{exitcode}==0 && defined($res->{AsyncID})){
+   my $sec=0;
+   while(1){
+      if ($W5V2::Debug){
+         printf("   ----------- sec=%5d -------------\n",$sec);
+      }
+      my $st=$MyClient->Call("rpcProcessState",$res->{AsyncID});
+      printf("%s",Dumper($st)) if ($W5V2::Debug);
+      if (defined($st->{exitcode}) && $st->{exitcode}!=0){
+         msg(ERROR,"can't rpcProcessState exitcode=$st->{exitcode}");
+         last;
+      }
+      last if (defined($st->{process}) && defined($st->{process}->{exitcode}));
+      $sec++;
+      sleep(1);
+   }
+}
+if (defined($res->{exitcode}) && $res->{exitcode}!=0){
+   msg(ERROR,"can't call event '$method' exitcode=$res->{exitcode}");
+   if (exists($res->{result})){
+      msg(ERROR,"RPC::Smart::Client result='$res->{result}'");
+   }
+   exit($res->{exitcode});
+}
+exit(0);
+
+sub help
+{
+   printf STDERR ("Usage: W5ServerClient [-d] -c {config} [-v]\n");
+   printf STDERR ("\n");
+   printf STDERR (" -c sets the name of the config (default:w5server.conf)\n");
+   printf STDERR (" -v activates verbose mode\n");
+   printf STDERR (" -d starts client in debug mode\n");
+   printf STDERR (" --W5ServerHost force a specific W5ServerHost\n");
+   printf STDERR (" --W5ServerPort force a specific W5ServerPort\n");
+   printf STDERR (" -noconnecterror -n no connect errors\n");
+   printf STDERR (" -allowerrorwin  -a allowed error window - def 0-23 UTC\n");
+   printf STDERR (" -showconfig -s     shows current config variables (-c)\n");
+   printf STDERR ("\n");
+}
+
+sub showConfig
+{
+   my $config=shift;
+
+   sub quote{
+      $_[0]=~s/"/\"/g;
+      $_[0]=~s/\$/\\\$/g;
+      $_[0];
+   }
+
+   foreach my $v (sort($config->varlist())){
+      my $val=$config->Param($v);
+      if (ref($val) eq "HASH"){
+         foreach my $sv (keys(%$val)){
+            printf("%s=\"%s\"\n",$v."[$sv]",quote($val->{$sv}));
+         }
+      }
+      else{
+         printf("%s=\"%s\"\n",$v,quote($val));
+      }
+   }
+}
+

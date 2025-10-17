@@ -1,0 +1,1764 @@
+#!/usr/bin/env perl 
+#  W5Base Framework W5Replicate - object mirroring tool
+#  Copyright (C) 2011  Hartmut Vogler (it@guru.de)
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../mod";
+use RPC::Smart::Client;
+use strict;
+use kernel;
+use kernel::config;
+use kernel::EventController;
+use Getopt::Long;
+use kernel::cgi;
+use List::Util 'shuffle';
+use Time::HiRes qw(usleep sleep);
+use DBI;
+use POSIX;
+use vars qw($opt_v $opt_h $opt_m $opt_c $opt_t $opt_p $opt_f
+            $opt_q $opt_l $configname);
+$|=1;
+my $startProcessPPID=getppid(); # there is need to check ppid at at start 
+                                # against current, because IO::Multiplex and
+                                # DBD::Oracle modifies SIGPIPE Handler!
+
+exit(1) if (!GetOptions('verbose'=>\$opt_v,
+                        'tasks=i'=>\$opt_t,
+                        'phase=s'=>\$opt_p,
+                        'module=s'=>\$opt_m,
+                        'quietmode'=>\$opt_q,
+                        'force'=>\$opt_f,          # process if other sessions
+                        'limittime=i'=>\$opt_l,
+                        'debug'=>\$opt_v,
+                        'help'=>\$opt_h,
+                        'config=s'=>\$opt_c));
+my @ObjectFilter=@ARGV;
+
+if ($opt_q){
+   open STDOUT, '>>/dev/null' or die "Can't write to /dev/null: $!";
+}
+
+
+my $ReplicationStart=time();
+if ($opt_h){
+   Help();exit(255);
+}
+if ($opt_v){
+   $W5V2::Debug=1;
+}
+else{
+   $W5V2::Debug=0;
+}
+
+
+
+if ($ENV{REMOTE_USER} eq ""){
+   if ($ENV{USER} ne ""){
+      $ENV{REMOTE_USER}="system/$ENV{USER}";
+   }
+   else{
+      $ENV{REMOTE_USER}="system/unknown";
+   }
+   $ENV{REAL_REMOTE_USER}="system/W5Replicate";
+}
+$W5V2::OperationContext="W5Replicate";
+
+
+#
+# handling option to set commandline specfied config-name
+#
+if ($opt_c eq ""){
+   $opt_c="w5replicate";
+}
+$configname=$opt_c;
+
+$opt_p="1,2,3" if ($opt_p eq "");
+my @requested_phase=split(/[,; ]+/,$opt_p);
+@requested_phase=grep(/^[1-3]$/,@requested_phase);
+
+#
+# small pack of records, witch be passed in one operation (commit)
+#
+my $smallpack=50;
+
+
+#
+# handling limitation of parallel tasks
+#
+my $maxslots=3;
+if ($opt_t ne ""){
+   if ($opt_t=~m/^\d+$/){
+      $maxslots=$opt_t;
+   }
+   else{
+      Help();exit(255);
+   }
+}
+msg(DEBUG,"use maximum slots=$maxslots");
+
+#
+# handling limitation replication time (time window to replicate)
+#
+my $MaximumReplicationTime=60;
+if ($opt_l ne ""){
+   if ($opt_l=~m/^\d+$/){
+      $MaximumReplicationTime=$opt_l;
+   }
+   else{
+      Help();exit(255);
+   }
+}
+if ($MaximumReplicationTime<20){
+   $MaximumReplicationTime=20;
+}
+msg(DEBUG,"use MaximumReplicationTime=$MaximumReplicationTime seconds");
+my @slot;
+
+$SIG{ALRM}=sub{ 
+   printf STDERR ("ERROR: hard termination start at ".time().
+                  " while replication timelimit reached\n");
+   for(my $slotno=0;$slotno<$maxslots;$slotno++){
+      if (defined($slot[$slotno])){
+         printf STDERR ("slot %d used by %s in phase %d since %d seconds\n",
+            $slotno,
+            $slot[$slotno]->{name},
+            $slot[$slotno]->{job}->{phase},
+            time()-$slot[$slotno]->{start});
+      }
+   }
+   printf STDERR ("----------------\n");
+   printf STDERR ("d=%s\n",Dumper(\@slot));
+   doShutdown();   
+   die("ERROR: hard programm termination by ".
+       "MaximumReplicationTime=$MaximumReplicationTime") 
+};
+alarm($MaximumReplicationTime+10);
+
+sub doShutdown{  # doShutdown handling if CTRL+C is pressed on main process
+   printf STDERR ("doShutdown started...\n");
+   for(my $slotno=0;$slotno<$maxslots;$slotno++){
+      if (defined($slot[$slotno])){
+         my $s=$slot[$slotno];
+         if (kill(0,$s->{pid})){
+            printf STDERR ("INFO: doShutdown slot $slotno with PID $s->{pid}\n");
+            kill(3,$s->{pid});
+         }
+      }
+   }
+   exit();
+}
+
+$SIG{CHLD}='DEFAULT';  # signal, falls ein tocherprozess terminiert
+$SIG{HUP}=\&doShutdown;
+$SIG{INT}=\&doShutdown;
+$SIG{KILL}=\&doShutdown;
+
+
+my %ClientParam=();
+
+my $config=new kernel::config();
+
+if (!$config->readconfig("$FindBin::Bin/..",$configname)){
+   msg(ERROR,"can't read configfile '%s'",$configname);
+   exit(1);
+}
+{
+   my $port=$config->Param("W5SERVERPORT");
+   $port=4711 if ($port eq "");
+   msg(DEBUG,"W5ServerPort=%s",$port);
+   $ClientParam{'PeerPort'}=$port;
+}
+{
+   my $ip=$config->Param("W5SERVERHOST");
+   $ip="127.0.0.1" if ($ip eq "");
+   msg(DEBUG,"W5ServerHost=%s",$ip);
+   $ClientParam{'PeerAddr'}=$ip;
+}
+
+my $MyClient=new RPC::Smart::Client(%ClientParam);
+my $self=new kernel::App(Config=>$config);
+if (!defined($W5V2::Translation{$self})){
+   $W5V2::Translation{$self}={self=>$self,tab=>{}};
+}
+$W5V2::Translation=$W5V2::Translation{$self};
+
+if (! defined($MyClient->Connect())){
+   msg(ERROR,"can't connect to server");
+   exit(1);
+}
+if (!defined($W5V2::W5Server)){
+   my %ClientParam;
+   $ClientParam{'PeerAddr'}=$self->Config->Param("W5SERVERHOST");
+   $ClientParam{'PeerPort'}=$self->Config->Param("W5SERVERPORT");
+   $W5V2::W5Server=new RPC::Smart::Client(%ClientParam);
+   $W5V2::W5Server->Connect();
+}
+$W5V2::Query=new kernel::cgi({});
+my $EventController=new kernel::EventController(Config=>$config);
+$EventController->Cache->{W5Server}=$W5V2::W5Server;
+
+
+#
+#                      Init finished
+#==================================================================
+#
+
+#
+# filtering requested objects
+#
+sub filterMatch
+{
+  #({obj=>$ctrl->{'name'}},\@ObjectFilter)
+  my $arg=shift;
+  my $flt=shift;
+  my $match=0;
+
+  foreach my $frec (@$flt){
+     my $neg=0;
+     my $o=$frec->{obj};
+     if ($o=~m/^\!/){
+        $o=~s/^\!//;
+        $neg=1;
+     }
+     my $qo=quotemeta($o);
+     $qo=~s/\\\*/.*/g;
+     if ($arg->{'obj'}=~m/^$qo$/){
+        if (!$neg){
+           $match=$frec;
+        }
+        else{
+           return(0);
+        }
+     }
+     else{
+        if ($neg){
+           $match=1;
+        }
+        else{
+           return(0);
+        }
+     }
+  }
+  return($match);
+}
+
+
+sub getOracleDBIschemaInfo
+{
+   my $dbi=shift;
+   my $schema=shift;
+
+   return(@{$W5REPL::schemaInfoCache}) if (defined($W5REPL::schemaInfoCache));
+
+   msg(INFO,"load schemaInfoCache in process $$");
+   my $sth=$dbi->table_info(undef,$schema,'%');
+   my $found=0;
+   my @l=$sth->getHashList();
+
+   $W5REPL::schemaInfoCache=\@l;
+
+   return(@l);
+}
+
+
+
+#
+# Connect to replication target oracle DB via DBI
+#
+sub getOracleDBIConnectionHandle
+{
+   my $dbconnect=$config->Param("ORACONNECT");
+   my $dbuser=$config->Param("ORAUSER");
+   my $dbpass=$config->Param("ORAPASS");
+   msg(INFO,"try ora connect='$dbconnect' user='$dbuser'");
+
+   if ($dbconnect eq "" || $dbuser eq "" || $dbpass eq ""){
+      msg(ERROR,"fatal error - not enough connection informations");
+      exit(255);
+   }
+   my $dst=DBI->connect($dbconnect,$dbuser,$dbpass,{
+      AutoCommit=>0,
+      FetchHashKeyName=>'NAME_lc',
+      ora_action=>'W5Replication'
+   });
+   if (!defined($dst)){
+      msg(ERROR,$DBI::errstr);
+      sleep(20);
+      exit(100);
+   }
+   $dst->{'LongTruncOk'} = 1;
+   $dst->{'LongReadLen'} = 128000;
+   $dst->doCmd("alter session set NLS_DATE_FORMAT='YYYY-MM-DD HH24:MI:SS'");
+   $dst->doCmd("alter session set NLS_NUMERIC_CHARACTERS='. '");
+   $dst->doCmd("alter session set TIME_ZONE='GMT'");
+   # set session TIME_ZONE to GMT to ensure to get a GMT timestamp
+   # while using CURRENT_DATE. Note: There is not way to ensure to get
+   # a GMT timestamp in SYSDATE on session level (SYSDATE timezone can
+   # only be set from system root! (not the DBA!))
+   msg(INFO,"connect to replication target '$dbconnect' successfull");
+   return($dst,uc($dbuser),lc($dbuser).'@'.lc($dbconnect));
+}
+
+
+sub storeReplicateObjectStat
+{
+   my $Config=shift;
+   my $dbi=shift;
+   my $ctrl=shift;
+   my $rorec=shift;
+   my $phase=shift;
+   my $avgrecaccess=shift;
+
+   my $n=0;
+   my $l=undef;
+   my $cmd="select count(*) n,(max(w5repllasttry)-min(w5repllasttry))*24 l ".
+           "from \"_$ctrl->{name}\" ";
+   if (my $rec=$dbi->getHash($cmd)){
+      $l=$rec->{l};
+      $l=~s/,/./g;
+      $l=sprintf("%.5lf",$l);
+      $n=$rec->{n};
+      my $ro=getModuleObject($Config,"replicate::obj");
+      if (!defined($ro)){
+         die("ERROR: can not access replicate::obj for $ctrl->{name}");
+      }
+      my $now=NowStamp("en");
+
+      my $updrec={
+         "entrycount"=>$n,
+         "last_phase$phase"=>$now,
+         "maxlatency"=>$l
+      };
+      if (defined($avgrecaccess)){
+         $updrec->{avgrecaccess}=$avgrecaccess;
+      }
+      $ro->ValidatedUpdateRecord($rorec,$updrec,{id=>\$rorec->{id}});
+   }
+}
+
+sub getReplicateObjectRec
+{
+   my $Config=shift;
+   my $rprec=shift;
+   my $ctrl=shift;
+   my $dbi=shift;
+   my $schema=shift;
+   my $objectname=$ctrl->{'name'};
+
+   my $ro=getModuleObject($Config,"replicate::obj");
+   if (!defined($ro)){
+      die("ERROR: can not access replicate::obj");
+   }
+   $ro->SetFilter({name=>\$objectname,partnerid=>\$rprec->{id}});
+   my ($rorec,$msg)=$ro->getOnlyFirst(qw(ALL));
+   if (!defined($rorec)){
+      my $newid=$ro->ValidatedInsertRecord({name=>$objectname,
+                                            partnerid=>$rprec->{id}});
+      if (!defined($newid)){
+         msg(ERROR,"can not initialize replication object record");
+         exit(101);
+      }
+      else{
+         $ro->SetFilter({id=>\$newid});
+         ($rorec,$msg)=$ro->getOnlyFirst(qw(ALL));
+      }
+   }
+   if (!defined($rorec)){
+      die("ERROR: can not load object record");
+   }
+
+   # ensure that control table for state informations exists in
+   # oracle replication schema
+
+   my $found=0;
+   foreach my $tab (getOracleDBIschemaInfo($dbi,$schema)){
+      if ($tab->{table_type} eq "TABLE" && 
+          $tab->{'table_name'} eq "_".$objectname){
+         $found++;
+      }
+   }
+   if (!$found){
+      # create control table for requested object
+      msg(INFO,"create new control table for $ctrl->{name}");
+      my $idname=$ctrl->{'idname'};
+      my $refidtype=$ctrl->{'col'}->{lc($idname)}->{type}."(".
+                    $ctrl->{'col'}->{lc($idname)}->{size}.")";
+      $dbi->doCmd("CREATE table \"_$ctrl->{name}\" (".
+                  "refid $refidtype,".
+                  "W5REPLKEY            CHAR(70) not null,".
+                  "W5REPLKEYPRI         CHAR(35) not null,".
+                  "W5REPLKEYSEC         CHAR(35) not null,".
+                  "W5REPLLASTSUCC       DATE not null,".
+                  "W5REPLLASTTRY        DATE not null,".
+                  "W5REPLMDATE          DATE not null,".
+                  "W5REPLCDATE          DATE not null,".
+                  "W5REPLFAILCNT        NUMBER(22,0) default 0 not null,".
+                  "constraint \"_$ctrl->{name}_pk\" PRIMARY KEY (refid), ".
+                  "constraint \"_$ctrl->{name}_fk\" FOREIGN KEY (refid) ".
+                  "  references \"$ctrl->{name}\" ($idname) ".
+                  "  ON DELETE CASCADE".
+                  ")\n");
+      $dbi->doCmd("CREATE index \"_$ctrl->{name}_si1\" ".
+                  "on \"_$ctrl->{name}\" (W5REPLKEYPRI)");
+      $dbi->doCmd("CREATE index \"_$ctrl->{name}_si2\" ".
+                  "on \"_$ctrl->{name}\" (W5REPLLASTSUCC)");
+      $dbi->doCmd("CREATE index \"_$ctrl->{name}_si3\" ".
+                  "on \"_$ctrl->{name}\" (W5REPLFAILCNT)");
+      $dbi->doCmd("CREATE index \"_$ctrl->{name}_si4\" ".
+                  "on \"_$ctrl->{name}\" (W5REPLLASTTRY)");
+
+      $dbi->commit();
+   }
+
+   return($rorec);
+}
+
+
+sub getReplicatePartnerRec
+{
+   my $Config=shift;
+   my $partner=shift;
+
+   my $rp=getModuleObject($Config,"replicate::partner");
+   if (!defined($rp)){
+      die("ERROR: can not access replicate::partner");
+   }
+   $rp->SetFilter({name=>\$partner});
+   my ($rprec,$msg)=$rp->getOnlyFirst(qw(ALL));
+   if (!defined($rprec)){
+      my $newid=$rp->ValidatedInsertRecord({name=>$partner,cistatusid=>'4'});
+      if (!defined($newid)){
+         msg(ERROR,"can not initialize replication partner record");
+         exit(101);
+      }
+      else{
+         $rp->SetFilter({id=>\$newid});
+         ($rprec,$msg)=$rp->getOnlyFirst(qw(ALL));
+      }
+   }
+   if (!defined($rprec)){
+      die("ERROR: can not load partner record");
+   }
+
+   return($rprec);
+}
+
+#
+# scans replication target by requested objects and attributes
+#
+sub getRequestedReplicationObjects
+{
+   my $Config=shift;
+   my $requested_phase=shift;
+   my @replicationOjects;
+   my ($dbi,$schema,$partner)=getOracleDBIConnectionHandle();
+
+   # check if other W5Replication Action are already in process in
+   # current schema - This needs read access to V$SESSION !
+
+   my @buffer=$dbi->getHashList(
+      "select * from V\$SESSION where ".
+      "USERNAME=sys_context('USERENV', 'SESSION_USER') and ".
+      "ACTION=sys_context('USERENV', 'ACTION') and ".
+      "SID<>sys_context('USERENV', 'SID')");
+   if ($#buffer!=-1){
+      if (!$opt_f){
+         $dbi->disconnect();
+         msg(ERROR,"other sessions in current schema are already active");
+         doShutdown();
+         exit(101);
+      }
+   }
+
+
+   my $rprec=getReplicatePartnerRec($Config,$partner);
+
+   # loading blacklist informations
+   my $blacklist=getModuleObject($Config,"replicate::blacklist");
+   $blacklist->SetFilter({
+      replpartnerid=>[$rprec->{id},undef],
+      status=>\'1',
+      expiration=>[undef,">now"]
+   });
+   $blacklist->SetCurrentView(qw(objtype field));
+   my $bl=$blacklist->getHashIndexed("objtype");
+
+
+   #
+   # loading table list from oracle schema and check tables with :: in it
+   # tables with a two douplepoints will be used as sync objects
+   #
+   foreach my $tab (getOracleDBIschemaInfo($dbi,$schema)){
+      if ($tab->{table_type} eq "TABLE" && # sync only on real tables (no 
+                                           # temp views for data representation)
+          $tab->{'table_name'}=~m/::/   &&
+          !($tab->{'table_name'}=~m/^_/)){ # objects are recognizable by :: 
+         my $blocked=0;
+         my $blockedFields=[];
+         if (exists($bl->{objtype}->{$tab->{'table_name'}})){
+            my $l=$bl->{objtype}->{$tab->{'table_name'}};
+            $l=[$l] if (ref($l) ne "ARRAY");
+            $blockedFields=[map({uc($_->{field})} @$l)];
+            if (in_array($blockedFields,'')){
+               $blocked=1;
+               #msg(WARN,"debug info: blocked by blacklist ".
+               #         "$tab->{'table_name'}");
+            }
+         }
+         if (!$blocked){
+            my %ctrl=(
+               'name'=>$tab->{'table_name'},
+               'blockedFields'=>$blockedFields,
+               'prio'=>'0',
+               'valid'=>'0',
+               'requested'=>'1'
+            );
+            push(@replicationOjects,\%ctrl);
+         }
+      }
+   }
+   #
+   # the fields in the tables with :: are automaticly the view to 
+   # w5base. If the fieldname begins with w5, it will be ignored in view.
+   #
+   foreach my $ctrl (@replicationOjects){
+#      my $replkey_found=0;
+      $ctrl->{'view'}=[];
+      $ctrl->{'columns'}=[];
+      $ctrl->{'col'}={};
+      my $sth=$dbi->column_info(undef,$schema,$ctrl->{'name'},'%');
+      foreach my $col ($sth->getHashList()){
+         if (in_array($ctrl->{blockedFields},$col->{'column_name'})){
+            #msg(WARN,"debug info: blocked by blacklist ".
+            #          "$ctrl->{'name'} : $col->{'column_name'}");
+            next;
+         }
+         $ctrl->{'col'}->{lc($col->{'column_name'})}={
+                               'name'=>$col->{'column_name'},
+                               'type'=>$col->{'type_name'},
+                               'size'=>$col->{'column_size'}
+         };
+         push(@{$ctrl->{'columns'}},
+              $ctrl->{'col'}->{lc($col->{'column_name'})});
+         if (!(lc($col->{'column_name'})=~m/^w5/)){
+            push(@{$ctrl->{'view'}},lc($col->{'column_name'}));
+         }
+      }
+      $ctrl->{'online'}=0;
+      my ($module)=$ctrl->{'name'}=~m/^(.*?)::/;
+      my @opt_m=split(/,/,$opt_m);
+      if ($opt_m ne "" && !in_array(\@opt_m,$module)){
+         msg(INFO,"skip $ctrl->{'name'} due opt_m filter to ".join("|",@opt_m));
+         next;
+      }
+
+      #
+      # validating object names against the connected w5base system
+      #
+      my $obj=getModuleObject($Config,$ctrl->{'name'});
+      if (defined($obj)){
+         $ctrl->{'online'}=1;
+         if ($obj->isSuspended()){
+            $ctrl->{'online'}=0;
+         }
+         if ($ctrl->{'online'}){
+            if (!$obj->Ping()){
+               my $infoObj=getModuleObject($Config,"itil::lnkapplappl");
+               if (defined($infoObj)){
+                  $infoObj->NotifyInterfaceContacts($obj);
+               }
+               $ctrl->{'online'}=0;
+            }
+         }
+
+         if ($ctrl->{'online'}){
+            my $idobj=$obj->IdField();
+            if (defined($idobj)){
+               my $idname=$idobj->Name();
+               $ctrl->{'idname'}=$idname;
+               if (exists($ctrl->{'col'}->{lc($idname)})){ # check on id col
+                  $ctrl->{'valid'}=1;
+                  $ctrl->{'replkeyfields'}=['replkeypri','replkeysec'];
+               }
+               else{
+                  $ctrl->{'valid'}=0;
+                  msg(ERROR,"id column '$idname' not exists in oracle ".
+                            "replication table  '$ctrl->{'name'}'");
+               }
+            }
+            my $syncobj=$obj->getField("replkeypri");
+            if (!defined($idobj)){  # id is mandatory for sync
+               msg(ERROR,"replication on object '$ctrl->{'name'}' ".
+                         "not posible - missing id field");
+               $ctrl->{'valid'}=0;
+            }
+            else{
+               if (!defined($syncobj)){  # a synckey must be defined in w5base!
+                  msg(ERROR,"remote object '$ctrl->{'name'}' ".
+                            "is not replication compatible");
+                  $ctrl->{'valid'}=0;
+               }
+            }
+         }
+      }
+   }
+
+   if ($#ObjectFilter!=-1){
+      my @objflt;
+      foreach my $k (@ObjectFilter){
+         if (my ($obj,$id)=$k
+             =~m/^(!{0,1}[a-z0-9*_]+::[a-z0-9*_]+)(\[.*\]){0,1}$/i){
+            my %f=(obj=>$obj);
+            if (defined($id)){
+               if ($#{$requested_phase}!=0 ||
+                   $requested_phase->[0] ne "1"){
+                  msg(ERROR,"object key selection only posible, ".
+                            "if only phase1 is forced");
+                  exit(255);
+               }
+               $id=~s/^\[//;
+               $id=~s/\]$//;
+               $f{idvalue}=\$id;
+               msg(INFO,"force phase 1 replication for key $id in $obj");
+            }
+            push(@objflt,\%f);
+         }
+         else{
+            msg(ERROR,"invalid object/element filter '$k'");
+            exit(255);
+         }
+      }
+
+      @ObjectFilter=@objflt;
+      foreach my $ctrl (@replicationOjects){ 
+         $ctrl->{'requested'}=0;
+         if (my $flt=filterMatch({obj=>$ctrl->{'name'}},\@ObjectFilter)){
+            $ctrl->{'requested'}=1;
+            msg(INFO,"object '$ctrl->{name}' requested by filter");
+            if (ref($flt)){
+               if (exists($flt->{idvalue})){
+                  $ctrl->{'idvalue'}=$flt->{idvalue};
+               }
+            }
+         }
+         else{
+            msg(INFO,"object '$ctrl->{name}' NOT requested");
+         }
+      }
+   }
+   my $rprec=getReplicatePartnerRec($Config,$partner);
+   foreach my $ctrl (@replicationOjects){  # ensure, that all replication obj
+      if ($ctrl->{'requested'} && $ctrl->{'online'} &&
+          $ctrl->{'valid'}){ # records are exists
+         my $rorec=getReplicateObjectRec($Config,$rprec,$ctrl,$dbi,$schema);
+         $ctrl->{'avgrecaccess'}=$rorec->{'avgrecaccess'};
+         $ctrl->{'entrycount'}=$rorec->{'entrycount'};
+         $ctrl->{'commitblocksize'}=$rorec->{'commitblocksize'};
+         $ctrl->{'allow_phase1'}=$rorec->{'allow_phase1'};
+         $ctrl->{'allow_phase2'}=$rorec->{'allow_phase2'};
+         $ctrl->{'allow_phase3'}=$rorec->{'allow_phase3'};
+         $ctrl->{'entrycount'}=0 if (!defined($ctrl->{'entrycount'}));
+         $ctrl->{'avgrecaccess'}=50 if (!defined($ctrl->{'avgrecaccess'}));
+      }
+   }
+   $dbi->commit();
+   $dbi->disconnect();
+
+   if ($opt_m ne ""){
+      msg(INFO,"opt_m used - try to find exit segmentation bug");
+      exit(1234);
+   }
+
+   return(@replicationOjects);
+}
+
+#
+# Phase1 replication process for a specified object - in this phase, the
+# new inserted or modified records are collected
+#
+sub objectReplicationPhase1
+{
+   my $Config=shift;
+   my $phaselimit=shift;
+   my $ctrl=shift;
+   my $start=time();
+   my $p1smallpack=$smallpack;
+
+   if ($ctrl->{commitblocksize}>0){
+      $p1smallpack=$ctrl->{commitblocksize};
+   }
+
+
+
+   msg(INFO,"============================================");
+   msg(INFO,"start: phase 1 replication for $ctrl->{name} - new records");
+   my ($dbi,$schema,$partner)=getOracleDBIConnectionHandle();
+
+
+
+   my $obj=getModuleObject($Config,$ctrl->{'name'});
+   if (!defined($obj)){
+      msg(ERROR,"can not connect to $ctrl->{name}");
+      return(undef);
+   }
+
+   my $rprec=getReplicatePartnerRec($Config,$partner);
+   my $rorec=getReplicateObjectRec($Config,$rprec,$ctrl,$dbi,$schema);
+
+   my $rstatobj=getModuleObject($Config,"replicate::stat");
+   my $rstatid=$rstatobj->ValidatedInsertRecord({
+      phase=>1,
+      objectid=>$rorec->{id},
+      startdate=>NowStamp("en")
+   });
+   if (!defined($rstatid)){
+      $dbi->rollback();
+      $dbi->disconnect();
+      die("can not create State-Record for phase 1 on $ctrl->{'name'}");
+   }
+
+   $p1smallpack=$p1smallpack*5 if ($ctrl->{name} eq "base::workflow");
+   my $oldreplkey;
+   my $recinqueue=1;
+   my $replkeypriwarn;
+   SPLOOP: while($ReplicationStart+$MaximumReplicationTime-10>time() &&
+         $start+$phaselimit>time()){
+      my $syncstart;
+      my $replkey;
+      my $replkeysec;
+      $replkeypriwarn=undef;
+      my $cmd="select max(w5replkey) sstart from \"_$ctrl->{name}\"";
+      foreach my $rec ($dbi->getHashList($cmd)){
+         $syncstart=$rec->{'sstart'};
+      }
+      $obj->ResetFilter();
+      $obj->Limit($p1smallpack,0,0);
+      if (exists($ctrl->{idvalue})){  # replicate only one KEY !
+         $obj->SetFilter({$ctrl->{idname}=>$ctrl->{idvalue}});
+         $obj->Limit(1,0,0);
+      }
+      elsif (defined($syncstart)){ # restart sync process at 
+                                # last known position
+         my $cmd="select w5replkeypri p,w5replkeysec s ".
+                 "from \"_$ctrl->{name}\" ".
+                 "where w5replkey=?";
+         foreach my $rec ($dbi->getHashList($cmd,$syncstart)){
+            $replkey=trim($rec->{'p'});
+            $replkeysec=trim($rec->{'s'});
+         }
+
+         if (defined($replkey)){
+            $obj->SetFilter({'replkeypri'=>\$replkey,
+                            $ctrl->{idname}=>'![EMPTY]'
+                            });
+            my $n=$obj->CountRecords();
+            $obj->ResetFilter();
+            $obj->SetFilter({'replkeypri'=>">=\"".$replkey."\"",
+                             $ctrl->{idname}=>'![EMPTY]'
+                            });
+            if ($n>$p1smallpack-1){  # if multiple records have the same
+                                     # replkeypri - all must be synced in
+                                     # one "smallpack"
+               $replkeypriwarn=sprintf(
+                  "found $n records with the same replkey '%s' in '%s'",
+                   $replkey,$ctrl->{name});
+               $obj->Limit($n+$p1smallpack,0,0);
+            }
+            else{
+               $obj->Limit($p1smallpack,0,0);
+            }
+         }
+      }
+      else{
+         $obj->SetFilter({}); # ensure that SetFilter is always be called
+         $obj->Limit($p1smallpack,0,0);  # for "hard" object filters 
+      }              
+      #$obj->ResetFilter();
+      #$obj->SetFilter({id=>"5275"});
+      my @syncfields=@{$ctrl->{'replkeyfields'}};
+      $obj->SetCurrentView(@syncfields,@{$ctrl->{'view'}});
+      $obj->SetCurrentOrder(@syncfields);
+
+      my ($srcrec,$msg)=$obj->getFirst(buffer=>0);
+      my $candidates=0;
+      my $processed=0;
+      if (defined($srcrec)){
+         $recinqueue=1;
+         my $lockres=$dbi->doCmd("lock table \"_$ctrl->{name}\" ".
+                                 "IN EXCLUSIVE MODE");
+         if ($lockres ne "0E0"){
+            msg(ERROR,"can not get exclusive lock on \"$ctrl->{name}\" - ".
+                      "hard break of phase 1");
+            exit(1);
+         }
+         do{
+            last SPLOOP if ( $start+$phaselimit<time()); 
+            $oldreplkey=$srcrec->{'replkeypri'};
+            if (exists($ctrl->{idvalue})){  # if idvalue is set, no seek in
+               $candidates++;               # stream is needed
+               $replkeysec=undef;
+               $replkey=undef;
+            }
+            else{
+               if ((defined($replkey) && 
+                    $srcrec->{'replkeypri'} gt $replkey) || 
+                   (defined($replkeysec) && 
+                    $srcrec->{'replkeysec'} ge $replkeysec &&
+                    $srcrec->{$ctrl->{'idname'}} ne "")){
+                  $candidates++;
+                  $replkeysec=undef;
+                  $replkey=undef;
+               }
+            }
+            if (!defined($replkeysec)){   # seek to synkey1 position in stream
+               if (!$dbi->InsertOrUpdate($obj,$ctrl,$srcrec)){
+                  msg(ERROR,"REPLICATION BREAK: fail to write in ".
+                            "object '$ctrl->{'name'}'");
+                  msg(ERROR,"DBI ERROR = $DBI::errstr");
+                  $dbi->rollback();
+                  $dbi->disconnect();
+                  return(8);
+               }
+               $processed++;
+               msg(INFO,"InsertOrUpdate commited - processed=$processed");
+            }
+            ($srcrec,$msg)=$obj->getNext();
+         } until(!defined($srcrec));
+         my $bk=$dbi->commit();
+         if (defined($replkeypriwarn)){  # clear posible existing big block
+            $replkeypriwarn=undef;       # waring, because it seems to be
+         }                               # completly handled
+      }
+      if ($processed<2 && $candidates<2){
+         $recinqueue=0;
+         last;
+      }
+   }
+   if (defined($replkeypriwarn)){
+      msg(WARN,$replkeypriwarn);
+   }
+   
+
+   msg(INFO,"end:   phase 1 replication for $ctrl->{name}");
+
+   storeReplicateObjectStat($Config,$dbi,$ctrl,$rorec,1);
+
+   my $rstatid=$rstatobj->ValidatedUpdateRecord({},{
+      enddate=>NowStamp("en")
+   },{id=>\$rstatid});
+
+   $dbi->commit();
+   $dbi->disconnect();
+   return(127) if ($recinqueue);
+   msg(INFO,"end:   phase 1 all fine and nothing in queue");
+   return(0);
+}
+
+
+
+
+#
+# Phase2 replication process for a specified object - in this phase, the
+# refresh and aging will be controlled
+#
+sub objectReplicationPhase2
+{
+   my $Config=shift;
+   my $phaselimit=shift;
+   my $ctrl=shift;
+   my $start=time();
+   my $p2smallpack=$smallpack;
+
+   if ($ctrl->{commitblocksize}>0){
+      $p2smallpack=$ctrl->{commitblocksize};
+   }
+   my $recaccess_reservetime=0;
+   if (exists($ctrl->{avgrecaccess}) && $ctrl->{avgrecaccess} ne ""){
+      #
+      # calculate a reserve time for dataobjects with a huge record
+      # access time to prevent hard timeouts by process alarm (and
+      # the triggered abort message)
+      #
+      $recaccess_reservetime=
+              (($ctrl->{avgrecaccess}/1000)*
+               ($ctrl->{avgrecaccess}/1000))*0.08;
+      if ($recaccess_reservetime>300){
+         $recaccess_reservetime=300;
+      }
+      $recaccess_reservetime=0;         # neuesten Erekenntnissen nach bringt
+                                        # das nichts (HV)
+      $ctrl->{recaccess_reservetime}=$recaccess_reservetime;
+   }
+   
+
+   msg(INFO,"============================================");
+   msg(INFO,"start: phase 2 replication for $ctrl->{name} - refresh");
+   my ($dbi,$schema,$partner)=getOracleDBIConnectionHandle();
+   my $obj=getModuleObject($Config,$ctrl->{'name'});
+   if (!defined($obj)){
+      msg(ERROR,"can not connect to $ctrl->{name}");
+      return(undef);
+   }
+
+   my $rprec=getReplicatePartnerRec($Config,$partner);
+   my $rorec=getReplicateObjectRec($Config,$rprec,$ctrl,$dbi,$schema);
+
+   my $rstatobj=getModuleObject($Config,"replicate::stat");
+   my $rstatid=$rstatobj->ValidatedInsertRecord({
+      phase=>2,
+      objectid=>$rorec->{id},
+      startdate=>NowStamp("en")
+   });
+   my $phase2start=Time::HiRes::time();
+   my $phase2recCnt=1;
+
+   if (!defined($rstatid)){
+      $dbi->rollback();
+      $dbi->disconnect();
+      die("can not create State-Record for phase 2 on $ctrl->{'name'}");
+   }
+
+   my $cmd="select count(*) n from \"_$ctrl->{name}\" ";
+   my $n=0;
+   my $basewhere="";
+   my $minrefreshlatency=6;
+   if ($rorec->{minrefreshlatency} ne "" &&
+       int($rorec->{minrefreshlatency})>0){
+      $minrefreshlatency=int($rorec->{minrefreshlatency});
+   }
+
+   if (my $rec=$dbi->getHash($cmd)){
+      $n=$rec->{'n'};
+      if ($n>1){
+         $n=int($n/7);
+         $n=1 if ($n<1);
+         my $cmd="select (m1.max-m2.min)/4+m2.min avg ".
+                 "from ".
+                 "(select max(w5repllasttry) max from \"_$ctrl->{name}\") m1,".
+                 "(select min(w5repllasttry) min from \"_$ctrl->{name}\") m2";
+         if (my $drec=$dbi->getHash($cmd)){
+            $basewhere=
+                  "where \"_$ctrl->{name}\".w5repllasttry<'$drec->{avg}' ".
+                  "and \"_$ctrl->{name}\".w5repllasttry<".
+                       "current_date-(1/24*$minrefreshlatency) ".
+                  "and ROWNUM<=$n ";   # max refresh every $minrefreshlatency h
+         }
+      }
+   }
+   my %idseen=();
+   SPLOOP: while($ReplicationStart+$MaximumReplicationTime-10>time() &&
+         $start+$phaselimit-$recaccess_reservetime>time()){
+      my $curSyncTime=time()-$ReplicationStart;
+
+      #my $lockwait=int($phaselimit*1.5);
+      #$lockwait=100 if ($lockwait<100);
+      #my $lockres=$dbi->doCmd("lock table \"$ctrl->{name}\" ".
+      #                        "IN EXCLUSIVE MODE WAIT $lockwait");
+      #if ($lockres ne "0E0"){
+      #   msg(ERROR,"can not get exclusive lock on \"$ctrl->{name}\" - ".
+      #             "hard break of phase 2");
+      #   exit(1);
+      #}
+      my $lockres=$dbi->doCmd("lock table \"_$ctrl->{name}\" ".
+                              "IN EXCLUSIVE MODE");
+      if ($lockres ne "0E0"){
+         msg(ERROR,"can not get exclusive lock on \"_$ctrl->{name}\" - ".
+                   "hard break of phase 2");
+         exit(1);
+      }
+      my $cmd="select * from ".
+              "(select $ctrl->{idname} from \"$ctrl->{name}\" ".
+              " left outer join \"_$ctrl->{name}\" ".
+              " on \"$ctrl->{name}\".$ctrl->{idname}=\"_$ctrl->{name}\".refid ".
+              $basewhere.
+              "order by \"_$ctrl->{name}\".w5repllasttry NULLS FIRST) ".
+              "where ROWNUM<$p2smallpack";
+      msg(INFO,"oracmd=$cmd");
+      my @buffer=$dbi->getHashList($cmd);
+      if ($#buffer==-1){
+         last;
+      }
+      foreach my $rec (@buffer){
+         my $id=$rec->{$ctrl->{idname}};
+         last SPLOOP if (exists($idseen{$id}) || # end if an ID is already seen
+                         $start+$phaselimit-$recaccess_reservetime<time()); 
+         $idseen{$id}++;
+         $dbi->doCmd("update \"_$ctrl->{name}\" set w5repllasttry=current_date ".
+                     "where refid=?",$id);
+         $obj->ResetFilter();
+         $obj->SetFilter({$ctrl->{idname}=>\$id});
+         # replkeyfields kann ein Problem sein, da dadurch Phase1 durcheinander
+         # kommen kann
+         #my ($rrec,$msg)=$obj->getOnlyFirst(@{$ctrl->{'replkeyfields'}},
+         #                                   @{$ctrl->{'view'}});
+         my ($rrec,$msg)=$obj->getOnlyFirst(@{$ctrl->{'view'}});
+         if (defined($rrec)){
+            if (!$dbi->InsertOrUpdate($obj,$ctrl,$rrec)){
+               msg(ERROR,"REPLICATION BREAK: fail to refresh in ".
+                         "object '$ctrl->{'name'}'");
+               $dbi->commit();
+               $dbi->disconnect();
+               return;
+            }
+            $phase2recCnt++;
+         }
+         else{
+            if ($obj->Ping()){
+               $dbi->doCmd("update \"_$ctrl->{name}\" ".
+                           "set w5replfailcnt=w5replfailcnt+1 ".
+                           "where refid=?",$id);
+            }
+            else{
+               msg(ERROR,"connection to object $ctrl->{name} lost - ".
+                         "hard break of phase 2");
+               exit(1);
+            }
+         }
+      }
+      $dbi->commit();
+   }
+   msg(INFO,"end:   phase 2 replication for $ctrl->{name}");
+   my $avgrecaccess;
+   if ($phase2recCnt>0){
+      $avgrecaccess=((Time::HiRes::time()-$phase2start)*1000)/$phase2recCnt;
+     # printf STDERR ("avg rec access in $ctrl->{name} ".
+     #                "(phaselimit=$phaselimit;cnt=$phase2recCnt) = %.3lf ms\n",
+     #                $avgrecaccess);
+   }
+
+
+   storeReplicateObjectStat($Config,$dbi,$ctrl,$rorec,2,$avgrecaccess);
+   my $rstatid=$rstatobj->ValidatedUpdateRecord({},
+                                                {
+                                                 enddate=>NowStamp("en"),
+                                                 effentries=>int(keys(%idseen))
+                                                },
+                                                {id=>\$rstatid});
+   $dbi->commit();
+   $dbi->disconnect();
+   return(0);
+}
+
+
+#
+# Phase3 replication process for a specified object - in this phase, the
+# old/aged elements will be deleted
+# Per default, all records with a failcount>2 and last success older then
+# 7 days, will be deleted
+#
+sub objectReplicationPhase3
+{
+   my $Config=shift;
+   my $phaselimit=shift;
+   my $ctrl=shift;
+   my $start=time();
+   msg(INFO,"============================================");
+   msg(INFO,"start: phase 3 replication for $ctrl->{name} - cleanup");
+   my ($dbi,$schema,$partner)=getOracleDBIConnectionHandle();
+
+   my $rprec=getReplicatePartnerRec($Config,$partner);
+   my $rorec=getReplicateObjectRec($Config,$rprec,$ctrl,$dbi,$schema);
+
+   my $rstatobj=getModuleObject($Config,"replicate::stat");
+   my $rstatid=$rstatobj->ValidatedInsertRecord({
+      phase=>3,
+      objectid=>$rorec->{id},
+      startdate=>NowStamp("en")
+   });
+
+
+ #  if (!defined($rstatid)){
+ #     $dbi->rollback();
+ #     $dbi->disconnect();
+ #     die("can not create State-Record for phase 3 on $ctrl->{'name'}");
+ #  }
+
+   #my $lockwait=int($phaselimit*1.9);
+   #$lockwait=100 if ($lockwait<100);
+   #my $lockres=$dbi->doCmd("lock table \"$ctrl->{name}\" ".
+   #                        "IN EXCLUSIVE MODE WAIT $lockwait");
+   #if ($lockres ne "0E0"){
+   #   msg(ERROR,"can not get exclusive lock on \"$ctrl->{name}\" - ".
+   #             "hard break of phase 3");
+   #   exit(1);
+   #}
+   my $lockres=$dbi->doCmd("lock table \"_$ctrl->{name}\" ".
+                           "IN EXCLUSIVE MODE");
+   if ($lockres ne "0E0"){
+      msg(ERROR,"can not get exclusive lock on \"_$ctrl->{name}\" - ".
+                "hard break of phase 3");
+      exit(1);
+   }
+   my $cmd="delete from \"$ctrl->{name}\" ".
+           "where \"$ctrl->{name}\".$ctrl->{idname} in ".
+           "(select refid from \"_$ctrl->{name}\" where ".
+           "(( \"_$ctrl->{name}\".w5repllastsucc<current_date-14 and ".
+           "  \"_$ctrl->{name}\".w5replfailcnt>1) or ".
+           "( \"_$ctrl->{name}\".w5repllastsucc<current_date-8 and ".
+           "  \"_$ctrl->{name}\".w5replfailcnt>8)) and ROWNUM<1000)";
+   msg(INFO,"oracmd=$cmd");
+   $dbi->doCmd($cmd);
+   #
+   # special handling for cistatusid=7 is not a good idea
+   #
+   #
+   #if (exists($ctrl->{col}->{cistatusid})){  # special handling for W5Base
+   #                                          # cistatusid=7 records - delete
+   #                                          # them after 7 days
+   #   my $ccmd="delete from \"$ctrl->{name}\" ".
+   #            "where \"$ctrl->{name}\".$ctrl->{idname} in ".
+   #            "(select \"_$ctrl->{name}\".refid ".
+   #            "from \"_$ctrl->{name}\" ".
+   #            "join \"$ctrl->{name}\" ".
+   #            "on \"_$ctrl->{name}\".refid=".
+   #            "\"$ctrl->{name}\".$ctrl->{idname} ".
+   #            "where \"_$ctrl->{name}\".w5repllastsucc<current_date-3 ".
+   #            "and \"$ctrl->{name}\".cistatusid='7')";
+   #   msg(INFO,"del cistatus7 cmd=$ccmd");
+   #   $dbi->doCmd($ccmd);
+   #}
+   msg(INFO,"end:   phase 3 replication for $ctrl->{name}");
+   storeReplicateObjectStat($Config,$dbi,$ctrl,$rorec,3);
+   my $rstatid=$rstatobj->ValidatedUpdateRecord({},{
+       enddate=>NowStamp("en")
+   }, {id=>\$rstatid});
+   $dbi->commit();
+   $dbi->disconnect();
+   return(0);
+}
+
+
+sub createSlot
+{
+   my $self=shift;
+   my $tasklabel=shift;
+   my $nice=shift;
+   my $ctrl=shift;
+   my $job=shift;
+   my $phaselimit=shift;
+   my $function=shift;
+
+   my $pid=fork();
+   if ($pid==0){
+      $0="W5Replicate $tasklabel ".$ctrl->{'name'};
+      $SIG{HUP}=sub{die("by HUP in $$")};
+      $SIG{INT}=sub{die("by INT in $$")};
+      $SIG{KILL}=sub{die("by KILL in $$")};
+      POSIX::nice($nice);
+      {   # reset eviroment
+         $W5V2::W5Server=undef;
+         my %ClientParam;
+         $ClientParam{'PeerAddr'}=$self->Config->Param("W5SERVERHOST");
+         $ClientParam{'PeerPort'}=$self->Config->Param("W5SERVERPORT");
+         $W5V2::W5Server=new RPC::Smart::Client(%ClientParam);
+         $W5V2::W5Server->Connect();
+         $self->Cache->{W5Server}=$W5V2::W5Server;
+      }
+      my $bk=&$function();
+      #printf STDERR ("fifi in CreateSlot finished - bk=$bk and exit\n");
+      #POSIX::_exit($bk);
+      exit($bk);
+   }
+   $job->{state}="running";
+   return({
+      pid=>$pid,
+      label=>$tasklabel,
+      job=>$job,
+      name=>$ctrl->{'name'},
+      start=>time(),
+      phaselimit=>$phaselimit
+   });
+}
+
+
+
+#                                    
+#==================================================================
+#                       MAIN         
+
+doShutdown() if ($startProcessPPID ne getppid());
+my @ReplicationObjects=getRequestedReplicationObjects($config,
+                                                      \@requested_phase);
+doShutdown() if ($startProcessPPID ne getppid());
+
+
+my @joblist;
+my $phase2entries=0;
+my $totalRefreshEntries=1;
+
+
+foreach my $replControl (@ReplicationObjects){
+   doShutdown() if ($startProcessPPID ne getppid());
+   my $p1jobrec;
+   my $p2jobrec;
+   my $p3jobrec;
+   if ($replControl->{'valid'} && $replControl->{'requested'}){
+      if (in_array(\@requested_phase,"1")){
+         if (!exists($replControl->{'filter'})){
+            if ($replControl->{'allow_phase1'}){
+               $p1jobrec={
+                  phase=>1,
+                  state=>'wait',
+                  replControl=>$replControl
+               };
+               unshift(@joblist,$p1jobrec);
+            }
+         }
+      }
+      if (in_array(\@requested_phase,"2")){
+         if ($replControl->{'allow_phase2'}){
+            $phase2entries++;
+            $totalRefreshEntries+=$replControl->{'entrycount'};
+            $p2jobrec={
+               phase=>2,
+               state=>'wait',
+               replControl=>$replControl
+            };
+            #if (defined($p1jobrec)){          # keine gute Idee, da dadurch
+            #   $p2jobrec->{depend}=$p1jobrec; # die Replikationsperformance
+            #}                                 # bei extrem großen Objekten
+            #                                  # scheisse wird
+            push(@joblist,$p2jobrec);
+         }
+      }
+      if (in_array(\@requested_phase,"3")){
+         if ($replControl->{'allow_phase3'}){
+            if (!exists($replControl->{'filter'})){
+               $p3jobrec={
+                   phase=>3,
+                   state=>'wait',
+                   replControl=>$replControl
+               };
+               push(@joblist,$p3jobrec);
+            }
+         }
+      }
+   }
+}
+@joblist=shuffle(@joblist);
+#print STDERR Dumper(\@joblist);sleep(1);
+my $currentStartPhase;
+while(my $nextjob=shift(@joblist)){
+   if (exists($nextjob->{depend}) && $nextjob->{depend}->{state} ne "done"){
+      msg(INFO,"dependence wait for $nextjob on ".
+               "$nextjob->{depend}($nextjob->{depend}->{state})");
+      if ($nextjob->{depend}->{state} eq "wait" ||
+          $nextjob->{depend}->{state} eq "running"){
+         push(@joblist,$nextjob);
+      }
+      else{
+         msg(ERROR,"job $nextjob->{replControl}->{name} dependence ".
+                   "break $nextjob->{depend}->{state}");
+      }
+      sleep(1);
+   }
+   else{
+      for(my $slotno=0;$slotno<$maxslots;$slotno++){
+         # das muß noch besser werden - phaselimit calc!
+         my $phaselimit=int($MaximumReplicationTime/($#joblist+2))*($maxslots/4);
+         if ($phaselimit<20){
+            $phaselimit=20;
+         } 
+         if ($phaselimit>($MaximumReplicationTime/3*2)){
+            $phaselimit=$MaximumReplicationTime/3*2;
+         }
+         msg(INFO,"calculated default phaselimit for $nextjob->{'replControl'}->{name} is $phaselimit");
+         msg(INFO,"current joblist size=".($#joblist+1));
+         if (!defined($slot[$slotno])){
+            my $replControl=$nextjob->{'replControl'};
+            if ($replControl->{'valid'} && $replControl->{'requested'}){
+               if ($nextjob->{'phase'}==1){
+                  $currentStartPhase=1;
+                  $slot[$slotno]=createSlot($self,"Phase1",1,
+                                            $replControl,$nextjob,$phaselimit,
+                  sub{
+                     objectReplicationPhase1($config,$phaselimit,$replControl);
+                  });
+               }
+               elsif ($nextjob->{'phase'}==2){ 
+                  #my $avgrecaccesstime=0.05;
+                  my $avgrecaccesstime=$replControl->{'avgrecaccess'}/1000;
+                  $avgrecaccesstime=0.05 if ($avgrecaccesstime<0.05);
+                  $phase2entries=1 if ($phase2entries<=0);
+                  my $restTime=$MaximumReplicationTime-20-
+                               (time()-$ReplicationStart);
+                  my $entrycount=$replControl->{'entrycount'};
+                  $entrycount=1 if ($entrycount==0);
+                  my $phaselimit=($restTime/$phase2entries/
+                                 (($totalRefreshEntries/100)*$avgrecaccesstime))*
+                                 $maxslots*$entrycount;
+                  my $minP2Limit=$MaximumReplicationTime/4;
+
+                  $phaselimit=$minP2Limit if ($phaselimit<$minP2Limit);
+                  $phaselimit=60 if ($phaselimit<60);
+                  my $maxP2Limit=$MaximumReplicationTime/3;
+                  if ($avgrecaccesstime>10.0){   # if records slow, give him a little bit more time
+                     $maxP2Limit=$MaximumReplicationTime/3*2.5;
+                  }
+                  if ($phaselimit>$maxP2Limit){
+                     $phaselimit=$maxP2Limit;
+                  }
+                  $phaselimit=int($phaselimit);
+                  $currentStartPhase=2;
+                  msg(INFO,"calculated default phaselimit p2 for $nextjob->{'replControl'}->{name} is $phaselimit");
+                  $slot[$slotno]=createSlot($self,"Phase2",10,
+                                            $replControl,$nextjob,$phaselimit,
+                  sub{
+                     objectReplicationPhase2($config,$phaselimit,$replControl);
+                  });
+               }
+               elsif ($nextjob->{'phase'}==3){  # cleanup
+                  $currentStartPhase=3;
+                  $slot[$slotno]=createSlot($self,"Phase3",2,
+                                            $replControl,$nextjob,10,
+                  sub{
+                     objectReplicationPhase3($config,10,$replControl);
+                  });
+               }
+            }
+            last;
+         }
+      }
+   }
+   while(1){
+      doShutdown() if ($startProcessPPID ne getppid());
+      my $freeslotcount=0;
+      my $runnging=0;
+      for(my $slotno=0;$slotno<$maxslots;$slotno++){
+         if (defined($slot[$slotno])){
+            my $s=$slot[$slotno];
+            $runnging++;
+            if (kill(0,$s->{pid})){
+               if ((my $sysexitcode=waitpid($s->{pid},WNOHANG))>0){
+                  $sysexitcode=$?;
+                  my $sig=$sysexitcode&127;
+                  my $exitcode=$sysexitcode>>8;
+                  $s->{'exitstate'}=$exitcode;
+                  if ($sig!=0){
+                     msg(ERROR,"recive signal $sig from replication task !!!");
+                     $s->{'exitstate'}=$sig;
+                  }
+                  $s->{'end'}=time();
+                  if ($s->{'exitstate'}==127){
+                     $s->{job}->{state}="incomplete";
+                  }
+                  elsif ($s->{'exitstate'}==0){
+                     $s->{job}->{state}="done";
+                  }
+                  else{
+                     $s->{job}->{state}="fail($s->{exitstate})";
+                  }
+               }
+            }
+            else{
+               delete($slot[$slotno]);
+            } 
+         }
+         else{
+            $freeslotcount++;
+         }
+      }
+      if (($freeslotcount>0 && $#joblist!=-1) || 
+          ($#joblist==-1 && $runnging==0)){
+         last;
+      }
+      usleep(200000); # sleep 0,2 sec (i hope)
+      msg(INFO,"freeslotcount=$freeslotcount joblist=$#joblist ".
+               "run=$runnging max=$maxslots");
+   }
+   msg(INFO,"next job request from joblist=$#joblist");
+}
+msg(INFO,"OK, done");
+#printf STDERR ("replication duration=%d max=%d\n",time()-$ReplicationStart,
+#               $MaximumReplicationTime);
+               
+exit(0);
+
+#==================================================================
+sub Help
+{
+   printf("Usage: W5Replicate [OPTIONS] [OBJECTS]\n");
+   printf("\n");
+   my $form=" %-60s %17s\n";
+   printf("OPTIONS:\n");
+   printf($form,"--config     configuration file",
+          "[replicate.conf]");
+   printf($form,"--debug      enable debug messages",
+          "[false]");
+   printf($form,"--quietmode  disable all INFO messages to STDOUT",
+          "[false]");
+   printf($form,"--limittime  limit t for replication process in sec",
+          "[60]");
+   printf($form,"--phase      process the specified phases",
+          "[1,2,3]");
+   printf($form,"--tasks      limit the count of parallel processes",
+          "[3]");
+   printf("\n");
+   printf("OBJECTS:\n");
+   printf("None, one or more object names (in W5Base interal notation), ".
+          "witch\nare should be replicated. If the Notation object[id] is ".
+          "used,\nonly the specified record id will be replicated.\n".
+          "f.e.:\n".
+          "base::user base::grp itil::system !base::workflow ...\n".
+          "base::location[12711643270034]\n\n");
+}
+#==================================================================
+
+
+package DBI::st;
+
+sub getHashList
+{
+   my $self=shift;
+   my @bind=@_;
+   my @l;
+
+   if ($self->execute(@bind)){
+      while(my $dbrec=$self->fetchrow_hashref()){
+         push(@l,$dbrec);
+      }
+      return(@l);
+   }
+   return(undef);
+}
+
+sub getHash
+{
+   my $self=shift;
+   my @bind=@_;
+   my @l;
+
+   if ($self->execute(@bind)){
+      my $dbrec=$self->fetchrow_hashref();
+      return($dbrec);
+   }
+   return(undef);
+}
+
+package DBI::db;
+use kernel;
+
+sub getHashList
+{
+   my $self=shift;
+   my $cmd=shift;
+   if (my $sth=$self->prepare($cmd)){
+      return($sth->getHashList(@_));
+   }
+   return(undef);
+}
+
+sub getHash
+{
+   my $self=shift;
+   my $cmd=shift;
+   if (my $sth=$self->prepare($cmd)){
+      my $dbrec=$sth->getHash(@_);
+      $sth->finish();
+      $self->commit();
+      return($dbrec);
+   }
+   else{
+      die("while prepare $cmd"); 
+   }
+   return(undef);
+}
+
+sub preprocessRecord
+{
+   my $self=shift;
+   my ($obj,$ctrl,$reqrec,$col)=@_;
+   my %rec=(%$reqrec);
+
+   if (exists($rec{'replkeypri'}) && exists($rec{'replkeysec'})){
+      # in Phase2 no replkeypri and replkeysec will be updated! This is
+      # neassesary to ensure process in Phase1
+      $rec{'w5replkey'}=sprintf("%35s%35s",$rec{'replkeypri'},
+                                           $rec{'replkeysec'});
+      $rec{'w5replkey'}=~s/ /0/g;
+      $rec{'w5replkeypri'}=$rec{'replkeypri'};
+      $rec{'w5replkeysec'}=$rec{'replkeysec'};
+   }
+   foreach my $k (@{$ctrl->{'replkeyfields'}}){
+      delete($rec{$k});
+   }
+   foreach my $fieldname (keys(%rec)){
+      my $fobj=$obj->getField($fieldname);
+      my $forceHashHandling=0;
+      if (defined($fobj)){
+         if ($fobj->Type() eq "XMLInterface"){
+            if (exists($rec{name}) && $rec{name} eq "W5Base/Darwin"){
+               $forceHashHandling=1;
+            }
+         }
+      }
+      if (scalar($rec{$fieldname}) =~ m/^Container=HASH/) {
+         $rec{$fieldname}=$self->Hash2DataField($forceHashHandling,
+                                                $rec{$fieldname});
+      }
+      if (ref($rec{$fieldname}) eq "ARRAY"){
+         if ($#{$rec{$fieldname}}>=0){
+            if (ref($rec{$fieldname}->[0]) ne "HASH"){
+               $rec{$fieldname}=join("; ",@{$rec{$fieldname}});
+            }
+            else{
+               $rec{$fieldname}=$self->Hash2DataField($forceHashHandling,
+                                                      $rec{$fieldname});
+            }
+         }
+         else{
+            $rec{$fieldname}=undef;
+         }
+      }
+      if (ref($rec{$fieldname}) eq "HASH"){
+         $rec{$fieldname}=$self->Hash2DataField($forceHashHandling,
+                                                $rec{$fieldname});
+      }
+      # strip all field values to the max. length in the replication
+      # schema. This prevent oracle SQL Errors
+      if (exists($col->{$fieldname})){
+         if ($col->{$fieldname}->{'type'} =~ m/^[char|varchar]/i) {
+            if (length($rec{$fieldname})>$col->{$fieldname}->{'size'}){
+               $rec{$fieldname}=substr($rec{$fieldname},0,
+                                       $col->{$fieldname}->{'size'});
+            }
+         }
+      }
+   }
+   return(\%rec);
+}
+
+
+sub isChanged
+{
+   my $self=shift;
+   my $ctrl=shift;
+   my $oldrec=shift;
+   my $newrec=shift;
+
+   my $changecount=0;
+   foreach my $k (keys(%$newrec)){
+      if (!($k=~m/^w5repl.*$/i)){
+
+        my $new=$newrec->{$k};
+         my $old=$oldrec->{$k};
+         if (trim($new) ne trim($old)){
+            $changecount++;
+            msg(INFO,sprintf("%s: old='%s' new='%s'",$k,$oldrec->{$k},
+                                                        $newrec->{$k}));
+         }
+      }
+   }
+   return($changecount);
+}
+
+
+
+
+sub InsertOrUpdate
+{
+   my $self=shift;
+   my $obj=shift;
+   my $ctrl=shift;
+   my $reqrec=shift;
+   my $dbtable=$ctrl->{'name'};
+   my $idname=$ctrl->{'idname'};
+   my $col=$ctrl->{'col'};
+   my ($bk,@w5v,@w5p,@w5b);
+
+   my $rec=$self->preprocessRecord($obj,$ctrl,$reqrec,$col);
+
+   my $cmd="select * from \"$dbtable\" where $idname=?";
+   my $idval=$rec->{$idname};
+   msg(INFO,"query ($idval): $cmd");
+   my @curlist=$self->getHashList($cmd,$idval);
+
+   # hier muß die view noch sortiert werden, da wenn die LOB Felder nicht
+   # am Ende des Statements stehen, ein ORA-24816 auftaucht.
+   my @view=sort({
+      my $pa="100";
+      my $pb="100";
+      my @lobs=qw(CLOB LOB BLOB);
+      $pa=900 if (in_array(\@lobs,$col->{$a}->{type}));
+      $pb=900 if (in_array(\@lobs,$col->{$b}->{type}));
+      $pa.$a cmp $pb.$b;
+   } keys(%$rec));
+
+   if ($#curlist==0){     # do an update
+      my $isChanged=$self->isChanged($ctrl,$curlist[0],$rec);
+      my (@v,@values);
+      foreach my $fieldname (@view){
+         if ($fieldname=~m/^w5repl.*/i){
+            push(@w5v,$fieldname);
+            push(@w5p,"?");
+            push(@w5b,$rec->{$fieldname});
+            delete($rec->{$fieldname});
+         }
+         else{
+            push(@values,$rec->{$fieldname});
+            if ($col->{$fieldname}->{type} =~ m/^(timestamp|date)/i) {
+               push(@v,"$fieldname=to_date(?,'YYYY-MM-DD HH24:MI:SS')");
+            }
+            else {
+               push(@v,'"'.uc($fieldname).'"'."=?");
+            }
+         }
+      }
+      if ($isChanged){
+         push(@w5v,"w5replmdate");
+         push(@w5p,"current_date");
+      }
+      my $v=join(",",@v);
+      my $updcmd="update \"$dbtable\" set $v where $idname=?";
+      msg(INFO,"upd ($idval): $updcmd (".
+               join(",",map({"'".$_."'"} @values,$idval)).")");
+      $bk=$self->doCmd($updcmd,@values,$idval);
+   }
+   elsif ($#curlist==-1){ # do an insert
+      my @values;
+      my @place;
+      my @insview;
+      foreach my $fieldname (@view) {
+         if ($fieldname=~m/^w5repl.*/i){
+            push(@w5v,$fieldname);
+            push(@w5p,"?");
+            push(@w5b,$rec->{$fieldname});
+            delete($rec->{$fieldname});
+         }
+         else{
+            push(@insview,'"'.uc($fieldname).'"');
+            push(@values,$rec->{$fieldname});
+            if ($col->{$fieldname}->{type} =~ m/^[timestamp|date]/i) {
+               push(@place,"to_date(?,'YYYY-MM-DD HH24:MI:SS')");
+            }
+            else {
+               push(@place,"?");
+            }
+         }
+      }
+      my $inscmd="insert into \"$dbtable\" ".
+        "(".join(",",@insview).") values(".join(",",@place).")";
+      msg(INFO,"ins ($idval): $inscmd");
+      $bk=$self->doCmd($inscmd,@values);
+   }
+   else{
+      msg(ERROR,"ganz scheisse!");
+      exit(-12356);
+   }
+   if ($bk){  # now store the current state of object in state table _
+      push(@w5v,'w5repllastsucc');
+      push(@w5p,'current_date');
+      push(@w5v,'w5repllasttry');
+      push(@w5p,'current_date');
+      push(@w5v,"w5replfailcnt");
+      push(@w5p,"0");
+      my $cmd="select refid from \"_$dbtable\" where refid=?";
+      my @curlist=$self->getHashList($cmd,$idval);
+      if ($#curlist==0){     # do an update
+         my @v;
+         for(my $c=0;$c<=$#w5v;$c++){
+            push(@v,$w5v[$c]."=".$w5p[$c]);
+         }
+         my $updcmd="update \"_$dbtable\" set ".
+                    join(",",@v)." where refid=?";
+         $bk=$self->doCmd($updcmd,@w5b,$idval);
+      }
+      else{
+         if (!in_array(\@w5v,"w5replmdate")){
+            push(@w5v,'w5replmdate');
+            push(@w5p,'current_date');
+         }
+         push(@w5v,'w5replcdate');
+         push(@w5p,'current_date');
+         push(@w5v,'refid');
+         push(@w5p,'?');
+         push(@w5b,$idval);
+         my $inscmd="insert into \"_$dbtable\" ".
+           "(".join(",",@w5v).") ".
+           "values(".join(",",@w5p).")";
+         msg(INFO,"w5ins: $inscmd :",join(",",@w5b));
+         $bk=$self->doCmd($inscmd,@w5b);
+      }
+   }
+   return($bk);
+}
+
+
+
+sub Hash2DataField
+{
+   my $self=shift;
+   my $forceHashHandling=shift;
+   my $container=shift;
+   my $element;
+
+   if ($forceHashHandling){
+     return(utf8(hash2xml($container))->latin1());
+   }
+   elsif (ref($container) eq "ARRAY"){
+     return(utf8(hash2xml({'struct'=>{'entry'=>$container}}))->latin1());
+   }
+   elsif (exists($container->{'item'}) && 
+       scalar($container->{'item'}) =~ m/^ARRAY/) {
+      foreach my $item (@{$container->{'item'}}) {
+         $element.=$item->{'name'}.
+                   "='".$item->{'value'}."'=".
+                   $item->{'name'}."\n";
+      }
+   }
+   else{
+     return("<struct><entry>".
+            utf8(hash2xml($container))->latin1()."</entry></struct>");
+   }
+   return($element);
+}
+
+sub effectedRows
+{
+   my $self=shift;
+   return($self->{effectedRows});
+}
+
+sub doCmd
+{
+   my $self=shift;
+   my $cmd=shift;
+
+   if (
+       ($cmd=~m/^\s*create\s+table\s/i) ||
+       ($cmd=~m/^\s*create\s+index\s/i) ||
+       ($cmd=~m/^\s*alter\s+table\s/i)
+      ){
+      msg(INFO,"reset schemaInfoCache in process $$ for cmd='$cmd'");
+      $W5REPL::schemaInfoCache=undef;  # clear schema cache
+   }
+
+
+
+   $self->{effectedRows}=undef;
+   if (my $sth=$self->prepare($cmd)){
+      my $bk=$sth->execute(@_);
+      $self->{effectedRows}=$sth->rows();
+      return($bk);
+   }
+   return(undef);
+}
+
+
+
+

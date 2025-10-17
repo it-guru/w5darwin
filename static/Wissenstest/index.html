@@ -1,0 +1,167 @@
+<html>
+
+<head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<link type="text/css" href="bin/themes/base/ui.all.css" rel="stylesheet"></link>
+<link type="text/css" href="bin/ui.presenter.css" rel="stylesheet"></link>
+<link id=resize type="text/css" href="bin/ui.presenter.size.0.css" rel="stylesheet"></link>
+<script type="text/javascript" src="bin/jquery.js"></script>
+<script type="text/javascript" src="bin/jquery.query.js"></script>
+<script type="text/javascript" src="bin/jquery.css.js"></script>
+<script type="text/javascript" src="bin/ui.core.min.js"></script>
+<script type="text/javascript" src="bin/ui.datepicker.min.js"></script>
+<script type="text/javascript" src="bin/jquery-ui-i18n.js"></script>
+<script type="text/javascript" src="bin/ui.dialog.min.js"></script>
+<script type="text/javascript" src="bin/ui.presenter.js"></script>
+<title>W5Base Wissenstest</title>
+</head>
+<body>
+
+
+<div class="slide" category="System und Administration"
+                   title="Useradministration">
+ <div class="question">
+  Systemadministration: Useradministration
+ </div>
+ <div class="comments">
+  <ul>
+  <li>Mit welchem Komando erzeugt man einen neuen User im 
+      System mit Homeverzeichnis</li>
+  <li>Welche M&ouml;glichkeiten kennen Sie, aus einer normalen 
+      User-Umgebung heraus root-Kommandos auszuf&uuml;hren</li>
+  </ul>
+ </div>
+</div>
+
+
+
+<div class="slide" category="System und Administration"
+                   title="SQL Frage 1">
+ <div class="question">
+  SQL: Grundwissen
+ </div>
+ <div class="comments">
+  Gegeben sind zwei Tabellen A und B. Mit welchem SQL-Kommando bekomme
+  ich angezeigt, wieviele Datens&auml;tze ein beiden Tabellen
+  zusammen vorhanden sind?
+ </div>
+</div>
+
+
+
+<div class="slide" category="System und Administration"
+                   title="SQL Datensatzanzahl">
+ <div class="question">
+  SQL: MySQL
+ </div>
+ <div class="comments">
+  Sie m&ouml;chten bei einem bestimmten SQL Kommando feststellen,
+  ob alle "where"-Kriterien vom MySQL Server &uuml;ber Index-Zugriffe
+  bearbeitet werden.<br><br>
+  Wie k&ouml;nnen Sie dies &uuml;berpr&uuml;fen?
+ </div>
+</div>
+
+
+
+<div class="slide" category="Programmierung"
+                   title="Perl5 Code Analyse">
+ <div class="question">
+  Programmierung: Perl5
+ </div>
+ <div class="comments">
+  Was erhalten Sie auf die Standard-Ausgabe (oder Standard-Error)
+  dargestellt, wenn Sie den folgenden Programmcode ausf&uuml;hren:
+<pre class=code>
+#!/usr/bin/env perl
+my $v; 
+if ($v->{myKey} ne ""){
+   print("keyFound\n");
+}
+print $v."\n"; 
+</pre>
+ </div>
+</div>
+
+
+
+<div class="slide" category="Programmierung"
+                   title="Perl5 Code Analyse">
+ <div class="question">
+  Programmierung: Perl5
+ </div>
+ <div class="comments">
+  Was ist an dem folgenden Code falsch oder f&uuml;hrt zu einem
+  Ausf&uuml;hrungsfehler?
+<pre class=code>
+#!/usr/bin/env perl
+my @v=qw(Hallo dies ist ein Test);
+my $v=[qw(Hallo Welt)];
+if (!grep(/^Welt$/,@v)){
+   push(@v,"!")
+}
+printf("Out1:%s\n",join(" ",@$v));
+printf("Out2:%s\n",join(" ",@v));
+</pre>
+ </div>
+</div>
+
+
+
+<div class="slide" category="Programmierung"
+                   title="JavaScript - jQuery">
+ <div class="question">
+  Programmierung: jQuery
+ </div>
+ <div class="comments">
+  Was bewiken die folgenden Programmcode Zeilen?
+<pre class=code>
+&lt;script language="JavaScript"&gt;
+   $("div").css({'border-width':'2px',
+            'border-color':'red',
+            'border-style':'solid'});
+   $("#div").val("Inhalt");
+   $(".div").height("10px");
+&lt;/script"&gt;
+</pre>
+ </div>
+</div>
+
+
+
+<div class="slide" category="Systembedienung und Administration"
+                   title="Unix Grundwissen">
+ <div class="question">Unix Systembedienung: Grundwissen</div>
+ <div class="comments">
+  Die folgende Liste soll mit reinen Unix-Kommandozeilen Tools
+  nach Nachname, Vorname und Ort sortiert ausgegeben werden.
+<pre>
+Vorname;Nachname;Strasse;Ort
+Hans;Maier;Bullerbue;Muenchen
+Inge;Maier;Am Weg;Muenchen
+Peter;Mueller;Reingweg;Bremen
+Anne;Bock;Am Platz;Aachen
+</pre>
+</div>
+
+
+
+<div class="slide" category="Systembedienung und Administration"
+                   title="Unix Grundwissen">
+ <div class="question">Systemadministration: Grundwissen</div>
+ <div class="comments">
+  Starten Sie eine Texteditor (vorzugsweise VI):
+  <ol>
+  <li>Geben Sie den Text "Dies ist ein Test Text ein"</li>
+  <li>Kopieren Sie die eingegebene Zeile 15 mal</li>
+  <li>Entfernen Sie aus den Zeilen 3-11 das Wort 
+      "Test" m&ouml;glichst effizient</li>
+  <li>Speichern Sie den Text unter dem Namen "test.txt" im DOS Format</li>
+  </ol>
+</div>
+
+
+
+</body>
+</html>
