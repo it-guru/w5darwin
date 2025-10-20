@@ -24,9 +24,9 @@ create table simonpkg (
   srcsys     varchar(100) default 'w5base',
   srcid      varchar(20) default NULL,
   srcload    datetime    default NULL,
-  PRIMARY KEY  (id),key(lastqcheck),
-  UNIQUE KEY name (name),
-  UNIQUE KEY `srcsys` (srcsys,srcid)
+  PRIMARY KEY simonpkg_id (id),key simonpkg_lastqcheck (lastqcheck),
+  UNIQUE KEY lastqcheck_name (name),
+  UNIQUE KEY `lastqcheck_srcsys` (srcsys,srcid)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 create table lnksimonpkgsoftware (
   id           bigint(20) NOT NULL,
@@ -43,11 +43,11 @@ create table lnksimonpkgsoftware (
   srcsys       varchar(100) default 'w5base',
   srcid        varchar(20) default NULL,
   srcload      datetime    default NULL,
-  PRIMARY KEY  (id),
-  UNIQUE KEY vers (simonpkg,software),
-  UNIQUE KEY `srcsys` (srcsys,srcid),
-  FOREIGN KEY fk_software (software) REFERENCES software (id) ON DELETE CASCADE,
-  FOREIGN KEY fk_simonpkg (simonpkg) REFERENCES simonpkg (id) ON DELETE CASCADE
+  PRIMARY KEY lnksimonpkgsoftware_id (id),
+  UNIQUE KEY lnksimonpkgsoftware_vers (simonpkg,software),
+  UNIQUE KEY `lnksimonpkgsoftware_srcsys` (srcsys,srcid),
+  FOREIGN KEY lnksimonpkgsoftware_fk_software (software) REFERENCES software (id) ON DELETE CASCADE,
+  FOREIGN KEY lnksimonpkgsoftware_fk_simonpkg (simonpkg) REFERENCES simonpkg (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 create table lnksimonpkgrec (
   id           bigint(20) NOT NULL,
@@ -73,11 +73,11 @@ create table lnksimonpkgrec (
   srcsys       varchar(100) default 'w5base',
   srcid        varchar(20) default NULL,
   srcload      datetime    default NULL,
-  PRIMARY KEY  (id),key(reqtarget),
-  UNIQUE KEY vers (simonpkg,system),
-  UNIQUE KEY `srcsys` (srcsys,srcid),
-  FOREIGN KEY fk_system (system) REFERENCES system (id) ON DELETE CASCADE,
-  FOREIGN KEY fk_simonpkg (simonpkg) REFERENCES simonpkg (id) ON DELETE CASCADE
+  PRIMARY KEY lnksimonpkgrec_id (id),key lnksimonpkgrec_reqtarget (reqtarget),
+  UNIQUE KEY lnksimonpkgrec_vers (simonpkg,system),
+  UNIQUE KEY `lnksimonpkgrec_srcsys` (srcsys,srcid),
+  FOREIGN KEY lnksimonpkgrec_fk_system (system) REFERENCES system (id) ON DELETE CASCADE,
+  FOREIGN KEY lnksimonpkgrec_fk_simonpkg (simonpkg) REFERENCES simonpkg (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 set FOREIGN_KEY_CHECKS=1;
 alter table lnksimonpkgrec add rejectcnt int(2) default '0';

@@ -41,7 +41,7 @@ create table tRnAI_useraccount(
   editor     varchar(100) NOT NULL default '',
   realeditor varchar(100) NOT NULL default '',
   PRIMARY KEY  (id),
-  unique(name),
+  unique(name)
 #  FOREIGN KEY (system) REFERENCES tRnAI_system (id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 create table tRnAI_usbsrv(
@@ -97,8 +97,8 @@ create table tRnAI_lnkuseraccountsystem(
   editor     varchar(100) NOT NULL default '',
   realeditor varchar(100) NOT NULL default '',
   PRIMARY KEY  (id),
-  UNIQUE(system,useraccount),
-  UNIQUE KEY `PrimCheck`(system,uflag),
+  UNIQUE (system,useraccount),
+  UNIQUE (system,uflag),
   FOREIGN KEY (system) REFERENCES tRnAI_system (id) ON DELETE CASCADE,
   FOREIGN KEY (useraccount) REFERENCES tRnAI_useraccount (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
