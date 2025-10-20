@@ -1,0 +1,9 @@
+'Save'=>{de=>'Aktion speichern/ausführen',en=>'action save/run'},
+'abbort request'=>{de=>'Anforderung abbrechen'},
+'empty or to short notes are not allowed'=>{de=>'leere oder zu kurze Notizen sind nicht erlaubt'},
+'use this action, to finish this request and mark it as according to desire processed'=>{de=>'Verwenden Sie diese Aktion, um die Anforderung als "wunschgemäß erledigt" abzuschließen'},
+'use this action, to call the request back. This can be usefull, if the request needs to be corrected.'=>{de=>'Verwenden Sie diese Aktion, um den Workflow "zurückzurufen". Dies macht dann Sinn, wenn Sie z.B. die Anforderung an die falsche Person zugewiesen haben'},
+
+"you don't have check the ensure checkbox"=>{de=>'Sie haben nicht die Sicherheitsabfrage bestätigt'},
+'you need to specified a descriptive note'=>{de=>'Sie müssen eine sprechende Bemerkung angeben'},
+'you need to specified a descriptive reason'=>{de=>'Sie müssen eine sprechende Begründung angeben'},

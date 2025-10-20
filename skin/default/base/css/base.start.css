@@ -1,0 +1,49 @@
+.LoginHandlerMainFrame{
+   width:40%;
+   xborder-style:solid;
+   xborder-width:1px;
+   float:left;
+}
+.LoginHelpMainFrame{
+   width:60%;
+   float:right;
+}
+#LOGINTOP{
+  width:90%;
+}
+.LoginFrame{
+   margin:10px;
+}
+.LoginButton{
+   font-weight: bold;
+   width:80%;
+   cursor:pointer;
+   text-align:left;
+   line-height: 35px;
+   vertical-align:middle;
+   margin-right:30px;
+   white-space:nowrap
+}
+
+.StdHiddenLoginButton, .StdHiddenLoginButton:hover, .StdHiddenLoginButton:focus{
+   width:0px;
+   height:0px;
+   margin:0;
+   padding:0;
+   border: none;
+   background: transparent;
+}
+
+.hideHelp{
+   display:none;
+   text-align:left;
+   margin:10px;
+}
+.baseHelp{
+   text-align:left;
+   margin:10px;
+}
+.HelpFrameVisible{
+   display:block;
+}
+

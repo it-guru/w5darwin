@@ -1,0 +1,424 @@
+<html><head>
+<link href='../../../static/fullcalendar/lib/fullcalendar.min.css' rel='stylesheet' />
+<link href='../../../static/fullcalendar/lib/fullcalendar.print.css' rel='stylesheet' media='print' />
+<link href='../../../static/fullcalendar/scheduler.min.css' rel='stylesheet' />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<meta charset='utf-8' />
+<title>W5Base Calendar Engine - preBETA!</title>
+</head><body><div id=MainStartup style='display:none;visiblity:hidden;height:auto;min-height:100%;max-height:100%;'>%MODALDIV%<table border=0 cellspacing=0 cellpadding=0 id=maintable><tr height=1%><td colspan=3>%TITLEBAR%</td></tr><tr><td valign=top width=1%><div id='workspace' style="width:1%;height:100%;overflow:auto">%EXMENUDIV%</div></td><td valign=top><table width=100% height=100% border=0><tr height=1%><td valign=top><div id='calendar'></div></td><td style="width:1%"></td></tr><tr><td valign=top ><div id=exdatahead><div id=ExHead></div></div><div id=exdatadiv><div id=ExData></div></div></td><td></td></tr>
+</table></td></tr></table></div></body>
+
+
+<link rel="stylesheet" href="../../../public/base/load/jquery.ui.css"></link>
+<link rel="stylesheet" href="../../../public/base/load/default.css"></link>
+<link rel="stylesheet" href="../../../public/base/load/work.css"></link>
+<link rel="stylesheet" href="../../../public/base/load/kernel.App.Web.css"></link>
+<link rel="stylesheet" href="../../../public/base/load/jquery.dataTables.css"></link>
+<link rel="stylesheet" href="../../../public/base/load/base.CalendarEngine.css"></link>
+
+
+<style>
+html,body{
+   margin:0;padding:0;height:100%;overflow:hidden;
+}
+#maintable{
+   width:100%;
+   height:100%;
+}
+#exdatadiv{
+   width:100%;
+   height:1;
+   overflow:auto
+}
+#ExHead{
+   max-height:120px;overflow:auto;
+}
+#ExData{
+}
+table.ExDataRec{
+   background-color:#E2E2E2;
+   border: 1px solid gainsboro; 
+   border-collapse: collapse; 
+   width:100%;
+   padding: 10px; 
+   border-radius: 5px; 
+   margin: 5px; 
+   border-spacing: 0; 
+   border-collapse: separate; 
+}
+
+table.ExHead{
+   background-color:#F0F0F0;
+   border: 1px solid gainsboro; 
+   border-collapse: collapse; 
+   width:100%;
+   padding: 10px; 
+   border-radius: 5px; 
+   margin: 0px; 
+   border-spacing: 0; 
+   border-collapse: separate; 
+}
+
+table.ExHeadForm{
+   background-color:#E2E2E2;
+   border: 1px solid gainsboro; 
+   border-collapse: collapse; 
+   width:95%;
+   padding: 6px; 
+   border-radius: 3px; 
+   margin: 0px; 
+   border-spacing: 0; 
+   border-collapse: separate; 
+}
+
+
+
+
+
+
+
+
+span.actionButton{
+   cursor: pointer;
+   cursor: hand;
+   font-size:8px;
+}
+
+
+span.base_workflow_link{
+   cursor: pointer;
+   cursor: hand;
+   font-style:italic;
+}
+
+span.tssm_chm_link{
+   cursor: pointer;
+   cursor: hand;
+   font-weight:bold;
+}
+
+
+
+.forwardSearch{
+   text-align:right;
+   padding-right:5px;
+   cursor: pointer;
+   cursor: hand;
+}
+
+@media print{
+   body{
+      background-color:transparent;
+   }
+   #maintable{
+      width:100%;
+      height:auto;
+   }
+   .forwardSearch{
+      display:none;
+      visibilty:hidden;
+   }
+   #exdatadiv{
+      width:100%;
+      height:auto;
+      overflow:visible;
+   }
+   #ExHead{
+      height:auto;
+      overflow:visible;
+   }
+   #ExData{
+      height:auto;
+      overflow:visible;
+   }
+}
+
+.baron{
+   margin:0;
+   padding:0;
+   font-size:12px;
+   color:black;
+   height:15px;
+   background-color:#72A47E;
+   float:left;
+   overflow:hidden;
+}
+.baroff{
+   margin:0;
+   padding:0;
+   font-size:12px;
+   color:black;
+   height:15px;
+   background-color:transparent;
+   float:left;
+   overflow:hidden;
+}
+</style>
+
+
+
+<script language="JavaScript" src="../../../auth/base/load/J5Base.js">
+</script>
+<script language="JavaScript" src="../../../public/base/load/spin.js">
+</script>
+<script language="JavaScript" src="../../../public/base/load/datadumper.js">
+</script>
+<script language="JavaScript" src="../../../public/base/load/date.format.js">
+</script>
+<script language="JavaScript" src="../../../public/base/load/subModal.js">
+</script>
+
+<script language="JavaScript" src="../../../public/base/load/jquery.dataTables.js">
+</script>
+
+<xscript language="JavaScript" src="../../../public/base/load/jquery.ui.js">
+</xscript>
+
+<script language="JavaScript" src="../../../public/base/load/jquery.mousewheel.js">
+</script>
+<script language="JavaScript" src="../../../public/base/load/jquery.ellipsis.js">
+</script>
+<script src='../../../static/fullcalendar/lib/moment.min.js'></script>
+<script src='../../../static/fullcalendar/lib/fullcalendar.min.js'></script>
+<script src='../../../static/fullcalendar/scheduler.min.js'></script>
+<script src='../../../static/fullcalendar/locale-all.js'></script>
+
+<script language="JavaScript" >
+var W5Base=createConfig({ useUTF8:false, mode:'auth',transfer:'JSON' });
+var App=Object();
+App.W5Base=W5Base;
+
+var escape = document.createElement('textarea');
+function escapeHTML(html) {
+    escape.textContent = html;
+    return escape.innerHTML;
+}
+
+function unescapeHTML(html) {
+    escape.innerHTML = html;
+    return escape.textContent;
+}
+
+function startSpinner(){
+   var opts = {
+     lines: 12, // The number of lines to draw
+     length: 7, // The length of each line
+     width: 5, // The line thickness
+     radius: 20, // The radius of the inner circle
+     color: '#fff', // #rbg or #rrggbb
+     speed: 1, // Rounds per second
+     trail: 66, // Afterglow percentage
+     shadow: true // Whether to render a shadow
+   };
+   var target = document.getElementById('spin')
+   var spinner = new Spinner(opts).spin(target);
+}
+function endSpinner(){
+   $('#spin').html("");
+}
+
+function doExpand(){
+   $('#exdatadiv').height(5);
+   $('#calendar').toggle();
+   resizeLevel1();
+}
+
+function formatSeconds(sec){
+   var s="~";
+
+   var days = parseInt( sec / 86400 );
+   var hours = parseInt( sec / 3600 ) % 24;
+   var minutes = parseInt( sec / 60 ) % 60;
+   var seconds = sec % 60;
+   if (days>0){
+      s+=days+"d "
+      if (hours>0){
+         s+=hours+"h "
+      }
+      if (minutes>0){
+         s+=minutes+"m "
+      }
+   }
+   else{
+      if (hours>0){
+         s+=hours+"h "
+      }
+      if (minutes>0){
+         s+=minutes+"m "
+      }
+   }
+   return(s);
+}
+
+function resizeLevel1(){
+   console.log($('#exdatadiv').parent());
+   var newexdata=$('#exdatadiv').parent().height();
+   var h=$('#exdatahead').height();
+   $('#exdatadiv').height(newexdata-h-5);
+}
+
+function resizeLevel0(){
+   var h=$('#exdatahead').height();
+   //$('#exdatadiv').height(h);
+   $('#exdatadiv').height(5);
+   setTimeout(resizeLevel1,100);
+}
+
+Date.prototype.frontendFormat = function() {
+  // use UCT functions, because all timestamps are already in frontend zone
+  var MM   = ("0"   + (this.getUTCMonth() + 1)).slice(-2);
+  var DD   = ("0"   + (this.getUTCDate())).slice(-2);
+  var YYYY = ("000" + (this.getUTCFullYear())).slice(-4);
+  var hh   = ("0"   + (this.getUTCHours())).slice(-2);
+  var mm   = ("0"   + (this.getUTCMinutes())).slice(-2);
+  var ss   = ("0"   + (this.getUTCSeconds())).slice(-2);
+
+  if ('%LANG%'=='de'){
+     return(DD+"."+MM+"."+YYYY+" "+hh+":"+mm+":"+ss);
+  }
+  else{
+     return(YYYY+"-"+MM+"-"+DD+" "+hh+":"+mm+":"+ss);
+  }
+};
+
+
+
+function calculatePercentBar(range_s,range_e,ev_s,ev_e){
+   //console.log("calculatePercentBar",range_s,range_e,ev_s,ev_e);
+   var eoverlab=false;
+   var soverlab=false;
+   var p1,p2,p3,t,t1,t3;
+   if (ev_s<range_s){
+      soverlab=true;
+      ev_s=range_s;
+      t1=0;
+   }
+   if (ev_e>range_e){
+      eoverlab=true;
+      ev_e=range_e;
+      t3=0;
+   }
+   if (soverlab && eoverlab){
+      p1=0; p2=100; p3=0;
+   }
+   else{
+      t=range_e-range_s;
+      if (!eoverlab){
+         t3=range_e-ev_e;
+      }
+      if (!soverlab){
+         t1=ev_s-range_s;
+      }
+      //console.log("t:",t," t1:",t1," t2(",t-(t3+t1),") t3:",t3);
+      p1=parseInt(t1*100/t);
+      p3=parseInt(t3*100/t);
+      p2=100-(p1+p3);
+   }
+
+   return([p1,p2,p3,soverlab,eoverlab]); 
+}
+
+function setDefaultExData(){
+   $('#ExHead').html("");
+   $('#ExData').html("");
+}
+
+%DATADETAILCODE%
+
+$(function() { // document ready
+   var initialLangCode = 'de';
+   $('#MainStartup').fadeIn();
+   var buttons="today prev,next refresh";
+   if (typeof(newTimespanHandler) === 'function'){
+      buttons+=" new";
+   }
+ 
+   $('#calendar').fullCalendar({
+      now: '%NOWSTAMP%',
+      timezone: '%TIMEZONE%',
+      aspectRatio: 2.3,
+      scrollTime: '00:00',
+      locale: initialLangCode,
+      schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source',
+      slotDuration: '01:00:00', 
+      customButtons: {
+          refresh: {
+              text: 'refresh',
+              click: function() {
+                  $('#calendar').fullCalendar('refetchEvents');
+              }
+          },
+          new: {
+              text: 'new',
+              click: function() {
+                 newTimespanHandler();
+              }
+          }
+      },
+      header: {
+         left: buttons,
+         center: 'title',
+         right: 'timelineDay,timeline5TenDay,timelineWeek,month'
+      },
+      //defaultView: 'timelineDay',
+      defaultView: 'month',
+
+      eventRender: function (event, element,view) {
+         if (event.holiday!="1"){
+            element.attr('href', 'javascript:void(0);');
+            element.click(function() {
+                showDataDetail(event);
+            });
+         }
+         else{
+            var dateString = event.start.format("YYYY-MM-DD");
+            $(view.el[0]).find('.fc-day[data-date='+dateString+']')
+                            .css('background-color',event.color);
+            $(view.el[0]).find('.fc-widget-header[data-date^='+dateString+']')
+                            .css('background-color',event.color);
+         }
+      },
+      views: {
+         timeline5TenDay: {
+            type: 'timeline',
+            duration: { days: 15 }
+         }
+      },
+      resourceAreaWidth: '20%',
+      loading: function (b) {
+         if (b){
+            //console.log("fifi evspinner start");
+            startSpinner(); 
+         }
+         else{
+            //console.log("fifi evspinner ende");
+            endSpinner(); 
+         }
+      },
+      eventAfterAllRender: function (view) {
+         setDefaultExData();
+         endSpinner(); 
+      },
+      resourceLabelText: 'Changes',
+      eventMouseover:function( e, jsEvent, view ) {
+         $('#detail').html(e.id);
+      },
+      eventSources:[
+         {
+            url: 'HolidayList',
+            editable:false
+         },
+         {
+            url: 'EventList',
+            editable:false
+         }
+      ]
+   });
+   resizeLevel0();
+   $(window).resize(resizeLevel0);
+});
+
+</script>
+<div id="spin"></div>
+</html>

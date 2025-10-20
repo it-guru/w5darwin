@@ -1,0 +1,8 @@
+'base::workprocessitem'=>{de=>'Prozesschritt',en=>'Workprocess Item'},
+'Item No.'=>{de=>'Pos.Nr.'},
+'Item label'=>{de=>'Prozessschrittbezeichnung'},
+'Order Key'=>{de=>'Sortierschlüssel'},
+'process step is milestone'=>{de=>'Prozessschrit ist Milestone'},
+'established time'=>{de=>'gängige Dauer'},
+'fieldgroup.wp'=>{de=>'Arbeitsprozess',en=>'Workprocess'},
+

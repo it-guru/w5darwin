@@ -1,0 +1,203 @@
+#!/usr/bin/env perl 
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../mod";
+use RPC::Smart::Client;
+use Data::Dumper;
+use strict;
+use kernel;
+use kernel::config;
+use kernel::EventController;
+use Getopt::Long;
+use kernel::cgi;
+use vars qw($opt_v $opt_d $opt_h $opt_c $opt_s $opt_t $configname);
+$0="W5Event ".join(" ",@ARGV);
+exit(1) if (!GetOptions('verbose'=>\$opt_v,
+                        'debug'=>\$opt_d,
+                        'timeout=i'=>\$opt_t,
+                        'serverless'=>\$opt_s,
+                        'help'=>\$opt_h,
+                        'config=s'=>\$opt_c));
+
+if ($opt_h ne ""){
+   help();
+   exit(1);
+}
+
+if (!$opt_v && !$opt_d){
+   close(STDOUT);
+}
+
+if ($opt_t){
+   if ($opt_t<1 || $opt_t>9999){
+      msg(ERROR,"option --timeout out of range (1-9999)");
+      exit(1);
+   }
+   else{
+      $SIG{ALRM}=sub{
+         msg(ERROR,"W5Event hard termination by --timeout");
+         POSIX::_exit(128);
+      };
+      alarm($opt_t);
+   }
+}
+
+
+if ($opt_d){
+   $W5V2::Debug=1;
+}
+else{
+   $W5V2::Debug=0;
+}
+
+if ($ENV{REMOTE_USER} eq ""){
+   if ($ENV{USER} ne ""){
+      $ENV{REMOTE_USER}="system/$ENV{USER}";
+   }
+   else{
+      $ENV{REMOTE_USER}="system/unknown";
+   }
+   $ENV{REAL_REMOTE_USER}="system/W5Event";
+}
+$W5V2::OperationContext="W5Server";
+
+
+
+if ($opt_c eq ""){
+   $opt_c="w5server";
+}
+$configname=$opt_c;
+
+#######################################################################
+# ENV Init $W5V2::*
+if (!defined($W5V2::INSTDIR)){
+   if (defined(&{FindBin::again})){
+      eval('FindBin::again();');
+      if (!defined($@)){
+         $W5V2::INSTDIR="$FindBin::Bin/..";
+      }
+   }
+}
+$W5V2::INSTDIR="/opt/w5base" if (!defined($W5V2::INSTDIR));
+my @w5instpath;
+if ($ENV{W5BASEINSTDIR} ne ""){
+   @w5instpath=split(/:/,$ENV{W5BASEINSTDIR});
+   $W5V2::INSTDIR=shift(@w5instpath);
+   $W5V2::INSTPATH=\@w5instpath;
+}
+foreach my $path (map({$_."/mod",$_."/lib"} $W5V2::INSTDIR),
+                  map({$_."/mod"} @w5instpath)){
+   my $qpath=quotemeta($path);
+   unshift(@INC,$path) if (!grep(/^$qpath$/,@INC));
+}
+#######################################################################
+
+
+my %ClientParam=();
+
+my $curconfig=new kernel::config();
+
+if (!$curconfig->readconfig("$FindBin::Bin/..",$configname)){
+   msg(ERROR,"can't read configfile '%s'",$configname);
+   exit(1);
+}
+{
+   my $port=$curconfig->Param("W5SERVERPORT");
+   $port=4711 if ($port eq "");
+   msg(DEBUG,"W5ServerPort=%s",$port);
+   $ClientParam{'PeerPort'}=$port;
+}
+{
+   my $ip=$curconfig->Param("W5SERVERHOST");
+   $ip="127.0.0.1" if ($ip eq "");
+   msg(DEBUG,"W5ServerHost=%s",$ip);
+   $ClientParam{'PeerAddr'}=$ip;
+}
+
+
+my $self=new kernel::App(Config=>$curconfig);
+if (!defined($W5V2::Translation{$self})){
+   $W5V2::Translation{$self}={self=>$self,tab=>{}};
+}
+$W5V2::Translation=$W5V2::Translation{$self};
+$W5V2::Query=new kernel::cgi({});
+
+
+if (!defined($W5V2::W5Server)){
+   $ClientParam{'PeerAddr'}=$self->Config->Param("W5SERVERHOST");
+   $ClientParam{'PeerPort'}=$self->Config->Param("W5SERVERPORT");
+   $W5V2::W5Server=new RPC::Smart::Client(%ClientParam);
+   $W5V2::W5Server->Connect();
+}
+my $MyClient=new RPC::Smart::Client(%ClientParam);
+if (! defined($MyClient->Connect())){
+   if ($opt_s eq ""){
+      msg(ERROR,"can't connect to server");
+      exit(1);
+   }
+}
+
+my $EventController=new kernel::EventController(Config=>$curconfig);
+$EventController->Cache->{W5Server}=$W5V2::W5Server;
+
+$EventController->LoadEventHandler();
+my $event=shift(@ARGV);
+$event=~s/\.pm$//;
+msg(DEBUG,"ProcessEvent '%s'",$event);
+my @bk=$EventController->ProcessEvent($event,{param=>[@ARGV]});
+if ($#bk==-1){
+   msg(ERROR,"Event '%s' not known",$event);
+   exit(1);
+}
+else{
+   msg(DEBUG,"Event '%s' processed at %d Handlers",$event,$#bk);
+   msg(DEBUG,"result=%s",Dumper(\@bk));
+   my $fineexit=0;
+   foreach my $bkrec (@bk){
+      my $exitcode;
+      if (!ref($bkrec)){
+         $exitcode="(miss result hash)";
+      }
+      elsif(!exists($bkrec->{exitcode})){
+         $exitcode="(undef)";
+      }
+      else{
+         $exitcode=$bkrec->{exitcode};
+         if ($fineexit==0){
+            $fineexit=$exitcode;
+         }
+      }
+      $exitcode="(undef)" if (!defined($exitcode));
+      my $exitmsg=$bkrec->{exitmsg};
+      if ($exitcode ne "0"){
+         msg(ERROR,"exitcode $exitcode: $exitmsg");
+      }
+      if ($self->Config->Param("W5BaseOperationMode") eq "dev" &&
+          $exitmsg ne ""){
+         printf("\nW5Event: exitcode $exitcode\n");
+         printf("$exitmsg\n") if ($exitmsg ne "");
+      }
+   }
+   exit($fineexit);
+}
+
+
+sub help
+{
+   printf STDERR ("Usage: W5Event [-s] [-d] [-h] -c {config} [-v] ".
+                  "{EVENTNAME}\n");
+   printf STDERR ("\n");
+   printf STDERR ("Running an event, direct in current process space. No \n");
+   printf STDERR ("call to W5Server is done and with option -s the W5Server\n");
+   printf STDERR ("is not connected at rise of event enviroment.\n");
+   printf STDERR ("\n");
+   printf STDERR ("\n");
+   printf STDERR (" -c sets the name of the config (default:w5server.conf)\n");
+   printf STDERR (" -t sets timeout (ALRM handling)\n");
+   printf STDERR (" -v activates verbose mode (and do NOT close STDOUT)\n");
+   printf STDERR (" -s serverless (running W5Server is not needed)\n");
+   printf STDERR (" -d starts the W5Server in debug mode (not as background!)\n");
+   printf STDERR ("\n");
+}
+
+

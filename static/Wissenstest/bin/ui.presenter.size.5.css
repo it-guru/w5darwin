@@ -1,0 +1,24 @@
+@media screen {
+   .navButton {
+      width:5em;
+      font-size:16px;
+   }
+   .question{
+      font-size:5.0em;
+   }
+   .comments{
+      font-size:3.7em;
+      padding:0.2em;
+   }
+   pre.code{
+      font-size:0.8em;
+   }
+   ul,ol{
+      padding-left:1.2em;
+   }
+   li{
+     font-size:0.8em;
+     padding-top:0.2em;
+     padding-bottom:0.2em;
+   }
+}

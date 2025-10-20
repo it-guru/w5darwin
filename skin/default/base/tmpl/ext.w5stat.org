@@ -1,0 +1,51 @@
+<table width="100%">
+<tr>
+
+<td valign="top"><br>
+The "total Users" KPI defines the count of employees
+in the current organisational unit incl. all sub units.<br>
+<br>
+Only these users can be counted, witch have already done a login at W5Base.
+</td>
+
+<td>
+%chart1%
+</td>
+</tr>
+</table>
+
+<table width="100%">
+<tr>
+
+<td>
+%chart2%
+</td>
+
+<td valign="top"><br>
+The "total Users" KPI defines the count of employees
+in the current organisational unit incl. all sub units.
+<br>
+<br>
+Only these users can be counted, witch have already done a login at W5Base.
+</td>
+
+</tr>
+</table>
+
+
+<table width="100%">
+<tr>
+
+<td valign="top"><br>
+The SubGroups are the count of organisational units
+"under" the current group.<br>
+<br>
+The Users in these SubGroups are counted in "total Users".
+</td>
+
+<td>
+%chart3%
+</td>
+</tr>
+</table>
+

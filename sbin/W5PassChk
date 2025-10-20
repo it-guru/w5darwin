@@ -1,0 +1,128 @@
+#!/usr/bin/env perl
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../mod";
+use RPC::Smart::Client;
+use strict;
+use kernel;
+use kernel::config;
+use kernel::EventController;
+use Getopt::Long;
+use kernel::cgi;
+use Digest::SHA1;
+use Data::HexDump;
+use Sys::Syslog;
+
+use vars qw($opt_v $opt_h $opt_c $configname);
+exit(1) if (!GetOptions('verbose'=>\$opt_v,
+                        'debug'=>\$opt_v,
+                        'help'=>\$opt_h,
+                        'config=s'=>\$opt_c));
+
+if ($opt_v){
+   $W5V2::Debug=1;
+}
+else{
+   $W5V2::Debug=0;
+}
+
+if ($ENV{REMOTE_USER} eq ""){
+   if ($ENV{USER} ne ""){
+      $ENV{REMOTE_USER}="system/$ENV{USER}";
+   }
+   else{
+      $ENV{REMOTE_USER}="system/unknown";
+   }
+   $ENV{REAL_REMOTE_USER}="system/W5PassChk";
+}
+
+###########################################################
+# init like W5Event
+###########################################################
+
+
+
+if ($opt_c eq ""){
+   $opt_c="w5server";
+}
+$configname=$opt_c;
+
+my %ClientParam=();
+
+my $curconfig=new kernel::config();
+
+if (!$curconfig->readconfig("$FindBin::Bin/..",$configname)){
+   msg(ERROR,"can't read configfile '%s'",$configname);
+   exit(1);
+}
+{
+   my $port=$curconfig->Param("W5SERVERPORT");
+   $port=4711 if ($port eq "");
+   msg(DEBUG,"W5ServerPort=%s",$port);
+   $ClientParam{'PeerPort'}=$port;
+}
+
+my $self=new kernel::App(Config=>$curconfig);
+if (!defined($W5V2::Translation{$self})){
+   $W5V2::Translation{$self}={self=>$self,tab=>{}};
+}
+$W5V2::Translation=$W5V2::Translation{$self};
+$W5V2::Query=new kernel::cgi({});
+
+
+if (!defined($W5V2::W5Server)){
+   $ClientParam{'PeerAddr'}=$self->Config->Param("W5SERVERHOST");
+   $ClientParam{'PeerPort'}=$self->Config->Param("W5SERVERPORT");
+   $W5V2::W5Server=new RPC::Smart::Client(%ClientParam);
+   $W5V2::W5Server->Connect();
+}
+my $MyClient=new RPC::Smart::Client(%ClientParam);
+if (! defined($MyClient->Connect())){
+   msg(ERROR,"can't connect to server");
+   exit(1);
+}
+
+$W5V2::Query=new kernel::cgi({});
+
+
+###########################################################
+# end of init like W5Event
+###########################################################
+
+# read stdin
+my $pwd=<STDIN>;
+$pwd=~s/\s*$//g;
+
+# stdin in sha1 hash
+my $ctx = Digest::SHA1->new;
+$ctx->reset;
+$ctx->add($pwd);
+my $stage1 = $ctx->digest;
+
+$ctx->reset;
+$ctx->add($stage1);
+my $stage2 = $ctx->hexdigest;
+
+# read stored password
+my $o=getModuleObject($curconfig,"base::useraccount");
+   $o->SetFilter({'account'=>"$ARGV[0]"});
+my ($rec,$msg)=$o->getHashList(qw(account password));
+
+# check if password mysql5 conform 
+if ($rec->{'password'}=~m/^\*/){
+   syslog("info","password is mysql5 conform");
+   $rec->{'password'}=~s/^\*//;
+   if (uc($stage2) eq uc($rec->{'password'})){
+      # password accepted
+      syslog("info","password accepted");
+      exit(0);
+   }else{
+      # access denied
+      syslog("info","password wrong");
+      exit(1);
+   }
+}else{
+   syslog("info","password is'nt mysql5 conform");
+   exit(1);
+}
+

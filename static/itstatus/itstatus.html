@@ -1,0 +1,358 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+ <link   rel="stylesheet" href="style.css"></link>
+ <script type='text/javascript'    
+    xsrc='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'>
+ </script>
+ <script src="../../public/base/load/jquery.js"></script>
+ <script src="../../public/base/load/date.format.js"></script>
+
+ <head>
+  <title>IT-Status - powered by W5Base/Darwin</title>
+ </head>
+ <body>
+  <center>
+  <div class="itmainframe">
+   <div style='width:100%;padding:0;margin:0'>
+   <table class=mainlights style='width:100%' border=1>
+     <tr height=40 class="toplabel" 
+         style="background-color:#ECEDEE"><td colspan=4>
+      <table border=0 width=100% height=40>
+      <td width=10% align=center valign=center>
+          <span id="loading" style="display:none">
+             <img border=0 src="loading.gif">
+          </span>
+      </td>
+      <td align=center class="toplabel">
+        SDM DTAG current top management information<br>(P1 events of prio 1 config items)
+      </td>
+      <td width=10% valign=center align=center>
+          <span style="cursor:pointer" onclick="reloadStatus();">
+             <img border=0 src="reload.gif">
+          </span>
+      </td>
+      </table>
+      </td> 
+     </tr>
+    
+   
+     <tr>
+      <td class="label" width=15% align=center>Customer</td>
+      <td class="label" width=10%>top item</td>
+      <td class="label">affected item</td>
+      <td class="label" nowrap width=23% align=center>begin major incident (CET)</td>
+     </tr>
+    
+    
+     <tr>
+      <td id="TDG" height=80 class="customer" align="center" nowrap
+          filter="DTAG.TDG DTAG.TDG.* DTAG.T-Home DTAG.T-Home.* DTAG.TMO DTAG.TMO.*" rowspan="3">
+         <span class="custlabel">TDG</span><br>TMO+T-Home</td>
+      <td class="item" id="TDG_app" height=40 valign="top">application</td>
+      <td id="TDG_appitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+<!-- 
+     <tr>
+      <td id="TDG_off" height=38 valign="top">office&amp;comm</td>
+      <td id="TDG_offitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+-->
+     <tr>
+      <td class="item" id="TDG_loc" height=40 valign="top">location</td>
+      <td id="TDG_locitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+     <tr>
+      <td class="item" id="TDG_off" height=38 valign="top">office&amp;comm</td>
+      <td id="TDG_offitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+
+    
+    
+     <tr>
+      <td id="GHS" height=80 class="customer" align="center"
+          filter="DTAG.GHS DTAG.GHS.*" rowspan="2">
+        <span class="custlabel">GHS</span></td>
+      <td class="item" id="GHS_app" height=38 valign="top">application</td>
+      <td id="GHS_appitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+     <tr>
+      <td class="item" id="GHS_off" height=38 valign="top">office&amp;comm</td>
+      <td id="GHS_offitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+<!--
+     <tr>
+      <td id="GHS_off" height=38 valign="top">office&amp;comm</td>
+      <td id="GHS_offitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+-->
+
+<!--
+   
+     <tr>
+      <td id="GHS_loc" height=38 valign="top">location</td>
+      <td id="GHS_locitem" align="left" valign="top">?</td>
+      <td id="GHS_locdate" align="left" nowrap valign="top">?</td>
+     </tr>
+-->
+    
+<!--    
+     <tr>
+      <td id="TSI" class="customer" align="center"
+          filter="DTAG.TSI" rowspan="2">TSI</td>
+      <td id="TSI_app" height=38 valign="top">application</td>
+      <td id="TSI_appitem" align="left" valign="top">?</td>
+      <td id="TSI_appdate" align="left" nowrap valign="top">?</td>
+     </tr>
+   
+     <tr>
+      <td id="TSI_loc" height=38 valign="top">location</td>
+      <td id="TSI_locitem" align="left" valign="top">?</td>
+      <td id="TSI_locdate" align="left" nowrap valign="top">?</td>
+     </tr>
+
+-->
+
+
+
+     <tr>
+      <td id="TSG" height=80 class="customer" align="center"
+          filter="DTAG.TSG DTAG.TSG.*" rowspan="2">
+         <span class="custlabel">TSG</span></td>
+      <td class="item" id="TSG_app" height=38 valign="top">application</td>
+      <td id="TSG_appitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+     <tr>
+      <td class="item" id="TSG_off" height=38 valign="top">office&amp;comm</td>
+      <td id="TSG_offitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+<!--
+
+
+     <tr>
+      <td id="TSI" height=80 class="customer" align="center"
+          filter="DTAG.TSI DTAG.TSI.*" rowspan="1">
+         <span class="custlabel">TSI</span></td>
+      <td class="item" id="TSI_app" height=38 valign="top">application</td>
+      <td id="TSI_appitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+-->
+
+
+     <tr>
+      <td id="DTAG" height=80 class="customer" align="center"
+          filter="DTAG" rowspan="1">
+         <span class="custlabel">DTAG</span><br>konzernweit</td>
+      <td class="item" id="DTAG_off" height=38 valign="top" align=center nowrap>office comm<br>&amp;<br>central serv.</td>
+      <td id="DTAG_offitem" align="left" colspan=2 valign="top">?</td>
+     </tr>
+
+<!--   
+     <tr>
+      <td id="TSG_loc" height=38 valign="top">location</td>
+      <td id="TSG_locitem" align="left" valign="top">?</td>
+      <td id="TSG_locdate" align="left" nowrap valign="top">?</td>
+     </tr>
+
+
+     <tr>
+      <td id="global" class="customer" align="center"
+          filter="" rowspan="2">global</td>
+      <td id="global_app" height=38 valign="top">application</td>
+      <td id="global_appitem" align="left" valign="top">?</td>
+      <td id="global_appdate" align="left" nowrap valign="top">?</td>
+     </tr>
+   
+     <tr>
+      <td id="global_loc" height=38 valign="top">location</td>
+      <td id="global_locitem" align="left" valign="top">?</td>
+      <td id="global_locdate" align="left" nowrap valign="top">?</td>
+     </tr>
+-->
+
+    </table>
+  </div>
+  </div>
+ </body>
+<script language="JavaScript">
+// ------------------------------------------------------------------------
+
+function storeEvent(currento,rec){
+   if (rec.eventstatclass<2){  // only prio 1  events
+      if (rec.affecteditemprio==1){
+         if (rec.eventstatclass==1){
+            if (currento.state<30) currento.state=30;
+         }
+         else if (rec.eventstatclass==2){
+            if (currento.state<20) currento.state=20;
+         }
+         else{
+            if (currento.state<10) currento.state=10;
+         }
+         if (rec.raweventmode=="EVk.appl"){
+            if (rec.mandator=="DSS" || rec.mandator=="TSS"){
+               rec.itemname=rec.affectedapplication;
+               currento.off[rec.eventstatclass].push(rec);
+            }
+            else{
+               rec.itemname=rec.affectedapplication;
+               currento.app[rec.eventstatclass].push(rec);
+            }
+         }
+         if (rec.raweventmode=="EVk.infraloc"){
+            rec.itemname=rec.affectedlocation;
+            currento.loc[rec.eventstatclass].push(rec);
+         }
+      }
+   }
+}
+
+function anaylseData(data){
+   var o=new Object();
+
+   // find target customer definitions
+   $(".customer").each(function(){
+      var id=$(this).attr("id");
+      var filter=$(this).attr("filter").split(" ");
+      o[id]=new Object();
+      o[id].id=id;
+      o[id].state=0;  // 0=green 10=lightgreen 20=yellow 30=red
+      o[id].filter=filter;
+      o[id].app=new Array(new Array(),new Array(),new Array(),
+                          new Array(),new Array(),new Array());
+      o[id].loc=new Array(new Array(),new Array(),new Array(),
+                          new Array(),new Array(),new Array());
+      o[id].off=new Array(new Array(),new Array(),new Array(),
+                          new Array(),new Array(),new Array());
+   });
+   // analyse data
+   for(var i in data){
+      var rec=data[i];
+      var cus=rec.affectedcustomer;
+      if (cus==undefined){
+         cus="";
+      }
+      if (typeof(cus)!="object"){
+         cus=new Array(cus);
+      }
+      var customerset;
+      for(var cusi in cus){
+         for(var oi in o){
+            for(var filteri in o[oi].filter){
+               var f=o[oi].filter[filteri];
+//console.log(f);
+               var ok=false;
+               if (f==cus[cusi]){
+                  ok=true;
+               }
+               if (f.match(/\.\*$/)){
+                  var chkf=f.replace(/\.\*$/,".");
+                  if (cus[cusi].substr(0,chkf.length)==chkf){
+                     ok=true;
+                  }
+               }
+               if (ok){
+                  storeEvent(o[oi],rec);
+               }
+            }
+         }
+      }
+   }
+   return(o);
+}
+
+
+function displayStatus(data){
+   var dispSet=anaylseData(data);
+   var COLOR_level0="green";
+   var COLOR_level1="#72C37C";
+   var COLOR_level2="#E9E982";
+   var COLOR_level3="red";
+   for(var cusi in dispSet){
+      var s=dispSet[cusi];
+      // --- 
+      var cuscolor=COLOR_level0;
+      if (s.state==10) cuscolor=COLOR_level1;
+      if (s.state==20) cuscolor=COLOR_level2;
+      if (s.state==30) cuscolor=COLOR_level3;
+      $("#"+cusi).css("background-color",cuscolor);
+      // --- 
+      var setlist=new Array('app','loc','off');
+      for(var seti in setlist){
+         var cuscolor=COLOR_level0;
+         var setname=setlist[seti];
+         var eventset=s[setname];
+         if (eventset[5].length>0) cuscolor=COLOR_level0;
+         if (eventset[4].length>0) cuscolor=COLOR_level1;
+         if (eventset[3].length>0) cuscolor=COLOR_level1;
+         if (eventset[2].length>0) cuscolor=COLOR_level2;
+         if (eventset[1].length>0) cuscolor=COLOR_level3;
+         $("#"+cusi+"_"+setname).css("background-color",cuscolor);
+         var detail=new Array();
+         for(var prio in eventset){
+            for(var i in eventset[prio]){
+               detail.push(
+                  "<tr><td><b>"+eventset[prio][i].itemname+"</b></td>"+
+                  "<td width=140>"+
+                  eventset[prio][i].eventstart.format("dd.mm.yyyy HH:MM")+
+                  "</td>"+
+                  "</tr>"+
+                  "<tr><td><i>"+
+                    eventset[prio][i].eneventshortsummary+
+                  "</i></td>"+
+                  "<td>&nbsp;</td>"+
+                  "</tr>"); 
+            }
+         }
+         var str=detail.join("");
+         $("#"+cusi+"_"+setname+"item").html(
+                "<table border=0 cellspacing=0 cellpadding=0 width=100%>"+
+                str+"</table>");
+
+         var detail=new Array();
+         for(var prio in eventset){
+            for(var i in eventset[prio]){
+               detail.push("<li>"+
+                  eventset[prio][i].eventstart.format("dd.mm.yyyy HH:MM")+
+                  "</li>"); 
+            }
+         }
+         var str=detail.join("");
+         $("#"+cusi+"_"+setname+"date").html("<ul class='date'>"+str+"</ul>");
+      }
+   }
+  // console.log("DisplaySet=",dispSet);
+   $("#loading").hide();
+   window.setTimeout(reloadStatus,300000);
+}
+
+function reloadStatus(){
+   $("#TSI_loc").addClass("locked");
+   $("#TSI_locitem").addClass("locked");
+   $("#TSI_locdate").addClass("locked");
+   $("#GHS_loc").addClass("locked");
+   $("#GHS_locitem").addClass("locked");
+   $("#GHS_locdate").addClass("locked");
+   $("#TSG_loc").addClass("locked");
+   $("#TSG_locitem").addClass("locked");
+   $("#TSG_locdate").addClass("locked");
+   $("#loading").show();
+   $.ajax({
+   //   url: 'http://darwin.telekom.de/darwin/public/itil/itstatus/asJSONP',
+      url: '../../public/itil/itstatus/asJSONP',
+      dataType: 'jsonp',
+      success: displayStatus
+   });
+}
+
+
+
+// --------------------------------- MAIN ---------------------------------
+$(document).ready(function (){
+   $("#loading").show();
+   window.setTimeout(reloadStatus,5000);
+});
+// ------------------------------------------------------------------------
+</script>
+</html>

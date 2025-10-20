@@ -1,0 +1,190 @@
+body{
+  background:#eaeaea;
+}
+div.Interview{
+  width:100%;
+  height:100%;
+}
+
+div.OnOfSwitch{
+  float:left;
+}
+span.InterviewQuestion{
+   cursor: pointer;
+   cursor: hand;
+}
+div.InterviewQuestBlockHead{
+   color:blue;
+   margin:4px;
+   font-size:15px;
+   cursor: pointer;
+   margin-bottom:0px;
+   vertical-align:center;
+}
+div.InterviewQuestBlock{
+   margin:4px;
+   margin-bottom:0px;
+   margin-top:1px;
+   border-width:1px;border-style:solid;border-color:gray;
+}
+div.InterviewQuestClust{
+   margin-right:2px;
+   margin-left:13px;
+   padding-left:2px;
+   margin-top:8px;
+   font-weight:bold;
+   background:silver;
+}
+div.InterviewQuestHead{
+   margin-left:20px;
+}
+table.InterviewQuestHead{
+   border-spacing:0; border-collapse:collapse;
+}
+td.InterviewQuestHead{
+   font-size:10px;;
+}
+td.InterviewSubMenu{
+   font-size:10px;;
+   width:1%;
+}
+div.InterviewQuest{
+   margin-left:20px;
+   overflow:hidden;
+   border-bottom-width:1px;border-bottom-style:solid;border-bottom-color:gray;
+}
+table.InterviewQuest{
+   border-spacing:0; border-collapse:collapse;
+}
+div.pfield{
+   font-size:8px;
+}
+body{
+   overflow:auto;
+}
+div.InterviewQuestBlockFancyHead{
+   display:none;visibility:hidden;
+}
+@media print {
+   body{
+      overflow:visible;
+      background:white;
+   }
+   div.qhelp{
+      display:none;visibility:hidden;
+   }
+   div.InterviewQuestBlockHead{
+      display:none;visibility:hidden;
+   }
+   div.InterviewQuestBlockFancyHead{
+      display:block;visibility:visible;
+   }
+   div.header{
+      display:none;visibility:hidden;
+   }
+}
+div.header{
+   border-bottom-style:solid;
+   border-width:1px;
+   border-color:black;
+   margin:5px;
+   margin-top:10px;
+   padding-bottom:5px;
+}
+
+div.qhelp{
+   margin-top:5px;
+   margin-left:2px;
+   cursor: pointer;
+}
+
+div.InterviewQuestAnswer
+{
+   margin:0px;
+   padding:0px;
+   margin-left:5px;
+}
+
+table.Panswer {
+   width:100%;
+   border-spacing:0; border-collapse:collapse;
+}
+td.Panswer {
+   margin:0px;
+   padding:0px;
+}
+div.Pseg1{
+   width:100%;height:18px;
+   background:green;
+   cursor:crosshair;
+}
+div.Pseg0{
+   width:100%;height:18px;
+   background:red;
+   cursor:crosshair;
+}
+
+.ui-dataCube{
+   padding:5px;
+}
+
+.ui-dataCube-dataline{
+   border-bottom-style:solid;
+   border-bottom-width:1px;
+   border-bottom-color:black;
+   border-top-style:solid;
+   border-top-width:1px;
+   border-top-color:black;
+}
+
+.ui-dataCube-dataline-label{
+
+}
+
+.ui-dataCube-value{
+   border: 1px solid #e78f08; 
+   background: #f6a828 url(images/ui-bg_gloss-wave_35_f6a828_500x100.png) 50% 50% repeat-x; 
+   color: #ffffff; 
+   font-weight: bold;
+   -moz-border-radius-topleft: 4px; 
+   -webkit-border-top-left-radius: 4px; 
+   -moz-border-radius-bottomleft: 4px; 
+   -webkit-border-bottom-left-radius: 4px;
+}
+
+.ui-dataCube-dataline-value{
+
+}
+
+.ui-dataCube-filter{
+   border-style:solid;
+   border-width:2px;
+   border-color:black;
+   padding:2px;
+   margin-bottom:15px;
+}
+
+.ui-dataCube-filterline{
+   border-bottom-style:solid;
+   border-bottom-width:1px;
+   border-bottom-color:gray;
+}
+
+.ui-dataCube-filterline-label{
+
+}
+
+.ui-dataCube-filterline-value{
+
+}
+
+.interview-analyse-red{
+   background-color:red;
+   background: red; 
+}
+
+.interview-analyse-green{
+   background: green; 
+   border-color:green;
+}
+
