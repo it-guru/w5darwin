@@ -17,8 +17,8 @@ create table AL_TCom_appl_aegmgmt (
   modifyuser bigint(20) default NULL,
   editor     varchar(100) NOT NULL default '',
   realeditor varchar(100) NOT NULL default '',
-  PRIMARY KEY  (id),
-  FOREIGN KEY fk_appl (id)
+  PRIMARY KEY AEG_id (id),
+  FOREIGN KEY AEG_fk_appl (id)
               REFERENCES appl (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 alter table AL_TCom_appl_aegmgmt add leadprmmgr bigint(20);
