@@ -117,39 +117,38 @@ sub qcheckRecord
          msg(INFO,$self->Self()." found parrec by shortname");
       }
    }
-   msg(INFO,$self->Self()." found leaderitid=$rec->{leaderitid}");
-   if (!defined($parrec) && $rec->{leaderitid} ne ""){
-      # check, if more then 50 VOUs have a HUB-ID
-      $dataobj->ResetFilter();
-      $dataobj->SetFilter({hubid=>'![EMPTY]'});
-      my $n=$dataobj->CountRecords();
 
-      if ($n>50){
-         # try to find a unique relation over BO-IT 
-         my $o=getModuleObject($self->getParent->Config(),"base::user");
-         $o->SetFilter({userid=>\$rec->{leaderitid},cistatusid=>4});
-         my ($urec,$msg)=$o->getOnlyFirst(qw(cistatusid fullname email));
-         if (defined($urec)){
-            $par->ResetFilter();
-            msg(INFO,$self->Self()." search by $urec->{email}");
-            $par->SetFilter({boit_email=>$urec->{email}});
-            my @l=$par->getHashList(qw(ALL));
-            if ($#l==0){
-               msg(INFO,$self->Self()." found unique parrec by BO-IT");
-               $parrec=$l[0];
-            }
-         }
-      }
-      if (defined($parrec)){
-         msg(INFO,$self->Self()." found parrec by BO-IT");
-      }
-
-   }
+#   msg(INFO,$self->Self()." found leaderitid=$rec->{leaderitid}");
+#   if (!defined($parrec) && $rec->{leaderitid} ne ""){
+#      # check, if more then 50 VOUs have a HUB-ID
+#      $dataobj->ResetFilter();
+#      $dataobj->SetFilter({hubid=>'![EMPTY]'});
+#      my $n=$dataobj->CountRecords();
+#
+#      if ($n>50){
+#         # try to find a unique relation over BO-IT 
+#         my $o=getModuleObject($self->getParent->Config(),"base::user");
+#         $o->SetFilter({userid=>\$rec->{leaderitid},cistatusid=>4});
+#         my ($urec,$msg)=$o->getOnlyFirst(qw(cistatusid fullname email));
+#         if (defined($urec)){
+#            $par->ResetFilter();
+#            msg(INFO,$self->Self()." search by $urec->{email}");
+#            $par->SetFilter({boit_email=>$urec->{email}});
+#            my @l=$par->getHashList(qw(ALL));
+#            if ($#l==0){
+#               msg(INFO,$self->Self()." found unique parrec by BO-IT");
+#               $parrec=$l[0];
+#            }
+#         }
+#      }
+#      if (defined($parrec)){
+#         msg(INFO,$self->Self()." found parrec by BO-IT");
+#      }
+#
+#   }
 
 
    if (defined($parrec)){
-
-
       if ($parrec->{hubid} ne "" && $parrec->{hubid} ne $rec->{hubid}){
          # check if new $parrec->{hubid} is free
          $dataobj->ResetFilter();
@@ -160,6 +159,8 @@ sub qcheckRecord
             my $msg="desired already used by other VOU: ".
                     $parrec->{hubid};
             push(@qmsg,$msg);
+            push(@dataissue,$msg);
+            $errorlevel=3 if ($errorlevel<3);
          }
          else{
             $self->IfComp($dataobj,
@@ -170,8 +171,29 @@ sub qcheckRecord
                           mode=>'string');
          }
       }
-
-
+      if ($parrec->{shortname} ne "" && 
+          $parrec->{shortname} ne $rec->{shortname}){
+         # check if new $parrec->{shortname} is free
+         $dataobj->ResetFilter();
+         $dataobj->SetFilter({shortname=>\$parrec->{shortname},
+                              id=>"!".$rec->{id}});
+         my ($chkrec,$msg)=$dataobj->getOnlyFirst(qw(ALL));
+         if (defined($chkrec)){
+            my $msg="desired already used by other VOU: ".
+                    $parrec->{shortname};
+            push(@qmsg,$msg);
+            push(@dataissue,$msg);
+            $errorlevel=3 if ($errorlevel<3);
+         }
+         else{
+            $self->IfComp($dataobj,
+                          $rec,"shortname",
+                          $parrec,"shortname",
+                          $autocorrect,$forcedupd,$wfrequest,
+                          \@qmsg,\@dataissue,\$errorlevel,
+                          mode=>'string');
+         }
+      }
    }
 
    my @result=$self->HandleQRuleResults("TSharePoint-HUB-Master",
