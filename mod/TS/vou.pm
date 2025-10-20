@@ -543,7 +543,8 @@ sub Validate
          return(0);
       }
    }
-   if (!defined($oldrec) || defined($newrec->{hubid})){
+   if (!defined($oldrec) || 
+       (exists($newrec->{hubid}) && $newrec->{hubid} ne "")){
       my $hubid=uc($newrec->{hubid});
       if ($outype eq "HUB" || $outype eq "SERVICE"){
          if (!($hubid=~m/^HUB-[A-Z0-9]{3,5}$/)){
@@ -557,7 +558,7 @@ sub Validate
             return(0);
          }
       }
-      my $oldhubid=effVal($oldrec,$newrec,"oldhubid");
+      my $oldhubid=effVal($oldrec,$newrec,"hubid");
       if ($oldhubid ne "" && $oldhubid ne $hubid){
          $newrec->{hubid}=$hubid;
       }
@@ -1002,6 +1003,16 @@ sub initSearchQuery
                   "\"!".$self->T("CI-Status(6)","base::cistatus")."\"");
    }
 }
+
+sub isQualityCheckValid
+{
+   my $self=shift;
+   my $rec=shift;
+   return(1);
+}
+
+
+
 
 
 
