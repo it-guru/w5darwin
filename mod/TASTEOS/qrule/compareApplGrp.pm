@@ -229,10 +229,14 @@ sub qcheckRecord
 
    my @l=$lobj->getHashList(qw(systemid applgrpid applid id reltyp
                                systemsystemid systemsrcsys systemsrcid
-                               isembedded isnetswitch shortdesc));
+                               isembedded isnetswitch 
+                               isrouter isfirewall shortdesc));
 
    @l=grep({
-      ($_->{isembedded} eq "0" && $_->{isnetswitch} eq "0")
+      ($_->{isembedded} eq "0" && 
+       $_->{isnetswitch} eq "0" &&
+       $_->{isfirewall} eq "0" &&
+       $_->{isrouter})
    } @l);
 
    my %ul;
