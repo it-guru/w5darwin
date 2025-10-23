@@ -329,24 +329,48 @@ sub extractAutoDiscData      # SetFilter Call ist Job des Aufrufers
    my $self=shift;
    my @res=();
 
-   $self->SetCurrentView(qw(systemname systemid instpkgsoftware));
+   $self->SetCurrentView(qw(systemname systemid osrelease instpkgsoftware));
 
    my ($rec,$msg)=$self->getFirst();
    if (defined($rec)){
       do{
 
          #####################################################################
-         #my %e=(
-         #   section=>'SYSTEMNAME',
-         #   scanname=>$rec->{systemname}, 
-         #   quality=>-50,    # relativ schlecht verlässlich
-         #   processable=>1,
-         #   forcesysteminst=>1  # MUSS System zugeordnet sein
-         #);
-         #push(@res,\%e);
+         my %e=(
+            section=>'SYSTEMNAME',
+            scanname=>$rec->{systemname}, 
+            quality=>-50,    # relativ schlecht verlässlich
+            processable=>1,
+            forcesysteminst=>1  # MUSS System zugeordnet sein
+         );
+         push(@res,\%e);
          #####################################################################
 
+         #####################################################################
 
+         my $chkobj=getModuleObject($self->Config,"itil::osrelease");
+         my $mappedos=$rec->{osrelease};
+         my $iomappedRec={};
+         my $d;
+         my @targetid=$chkobj->getIdByHashIOMapped(
+            "FLEXERAatW5::system",
+            {name=>$rec->{osrelease}},
+            DEBUG=>\$d,
+            iomapped=>$iomappedRec,
+            ForceLikeSearch=>1 
+         );
+         if ($#targetid==0){
+            my %e=(
+               section=>'OSRELEASE',
+               scanname=>$iomappedRec->{name}, 
+               scanextra1=>$rec->{osrelease}, 
+               quality=>-10,    # relativ schlecht verlässlich
+               processable=>1,
+               forcesysteminst=>1  # MUSS System zugeordnet sein
+            );
+            push(@res,\%e);
+         }
+         #####################################################################
 
 
          foreach my $s (@{$rec->{instpkgsoftware}}){
