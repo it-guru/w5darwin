@@ -50,6 +50,10 @@ sub Init
                       "FLEXERAatW5W::software",
                       defaultacl=>['valid_user']);
 
+   $self->RegisterObj("itu.flexeraatw5w.system.w5os",
+                      "FLEXERAatW5W::osrelease",
+                      defaultacl=>['valid_user']);
+
    return($self);
 }
 
