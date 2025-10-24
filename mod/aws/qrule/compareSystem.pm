@@ -219,10 +219,12 @@ sub qcheckRecord
                cpucount=>$parrec->{cpucount},
                autoscalinggroup=>$parrec->{autoscalinggroup},
                memory=>$parrec->{memory},
-               osrelease=>$parrec->{image_name},
                sysiface=>\@sysiface,
                ipaddresses=>\@ipaddresses,
             );
+            if (!$rec->{autodiscrecosrelease}){
+               $syncData{osrelease}=$parrec->{image_name};
+            }
             if ($parrec->{platform}=~m/linux/i){
                $syncData{osclass}="LINUX";
             }

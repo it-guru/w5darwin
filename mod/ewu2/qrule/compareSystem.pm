@@ -259,13 +259,18 @@ sub qcheckRecord
                           \@qmsg,\@dataissue,\$errorlevel,
                           mode=>'integer');
 
-            $self->IfComp($dataobj,
-                          $rec,"osrelease",
-                          $parrec,"osrelease",
-                          $autocorrect,$forcedupd,$wfrequest,
-                          \@qmsg,\@dataissue,\$errorlevel,
-                          mode=>'leftouterlinkbaselogged',
-                          iomapped=>$par);
+            if ($rec->{autodiscrecosrelease}){
+               push(@qmsg,"skip osrelease due aktive autodiscovery data");
+            }
+            else{
+               $self->IfComp($dataobj,
+                             $rec,"osrelease",
+                             $parrec,"osrelease",
+                             $autocorrect,$forcedupd,$wfrequest,
+                             \@qmsg,\@dataissue,\$errorlevel,
+                             mode=>'leftouterlinkbaselogged',
+                             iomapped=>$par);
+            }
             if ($rec->{allowifupdate}){
                my $net=getModuleObject($self->getParent->Config(),
                        "itil::network");
