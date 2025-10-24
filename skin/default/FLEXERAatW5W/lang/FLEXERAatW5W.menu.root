@@ -2,4 +2,5 @@
 'itu.flexeraatw5w.system'=>{de=>'System',en=>'System'},
 'itu.flexeraatw5w.system.systemid'=>{de=>'SystemIDmap',en=>'SystemIDmap'},
 'itu.flexeraatw5w.system.software'=>{de=>'Software',en=>'Software'},
+'itu.flexeraatw5w.system.w5os'=>{de=>'W5BOS Mapping',en=>'W5BOS Mapping'},
 
