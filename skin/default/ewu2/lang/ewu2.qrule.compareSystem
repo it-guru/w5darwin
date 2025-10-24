@@ -14,3 +14,7 @@
    de=>'unterschiedliche Daten, aber automatisches Update vorübergehend deaktiviviert'
 },
 'auto deactivation of ewu2 logical system'=>{de=>'automatische Deaktivierung des EWU2 systems'},
+'skip osrelease due aktive autodiscovery data'=>{
+ de=>'Überspringen der Betriebssystemversion wegen existierender AutoDisc Daten'
+}
+

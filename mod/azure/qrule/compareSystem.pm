@@ -157,13 +157,14 @@ sub qcheckRecord
                sysiface=>\@sysiface,
                ipaddresses=>\@ipaddresses
             );
-            if ($rec->{osrelease} eq "" ||            # sync os only if nobody
-                lc($rec->{osrelease}) eq "other" ||   # has changed it in w5b
-                lc($rec->{osrelease}) eq "windows" ||
-                lc($rec->{osrelease}) eq "linux"){
-               $syncData{osrelease}=$parrec->{osrelease};
+            if (!$rec->{autodiscrecosrelease}){
+               if ($rec->{osrelease} eq "" ||          # sync os only if nobody
+                   lc($rec->{osrelease}) eq "other" || # has changed it in w5b
+                   lc($rec->{osrelease}) eq "windows" ||
+                   lc($rec->{osrelease}) eq "linux"){
+                  $syncData{osrelease}=$parrec->{osrelease};
+               }
             }
-                
 
             my $w5itcloudarea;
             if ($parrec->{subscriptionId} ne ""){

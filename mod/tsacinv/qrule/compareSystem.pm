@@ -721,12 +721,17 @@ sub qcheckRecord
                              $autocorrect,$forcedupd,$wfrequest,
                              \@qmsg,\@dataissue,\$errorlevel,
                              mode=>'string');
-               $self->IfComp($dataobj,
-                             $rec,"osrelease",
-                             $parrec,"systemos",
-                             $autocorrect,$forcedupd,$wfrequest,
-                             \@qmsg,\@dataissue,\$errorlevel,
-                             mode=>'leftouterlinkbaselogged');
+               if ($rec->{autodiscrecosrelease}){
+                  push(@qmsg,"skip osrelease due aktive autodiscovery data");
+               }
+               else{
+                  $self->IfComp($dataobj,
+                                $rec,"osrelease",
+                                $parrec,"systemos",
+                                $autocorrect,$forcedupd,$wfrequest,
+                                \@qmsg,\@dataissue,\$errorlevel,
+                                mode=>'leftouterlinkbaselogged');
+               }
                if ($dataobj->getField("itnormodel")){
                   $self->IfComp($dataobj,
                                 $rec,"itnormodel",

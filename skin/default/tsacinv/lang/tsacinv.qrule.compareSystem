@@ -27,3 +27,6 @@
 'ignoring multiple console ip'=>{de=>'ignoriere mehrfache IP-Console'},
 'using costobject from TelIT-cost object mapping'=>{de=>'verwende Kontierungsobject aus der TelIT Mapping Tabelle'},
 'can not assign network area to'=>{de=>'Netzwerkbereich kann nicht zugewiesen werden'},
+'skip osrelease due aktive autodiscovery data'=>{
+ de=>'Überspringen der Betriebssystemversion wegen existierender AutoDisc Daten'
+}

@@ -320,11 +320,13 @@ sub qcheckRecord
                name=>\@sysname,
                cpucount=>$parrec->{cpucount},
                memory=>$parrec->{memory},
-               osrelease=>$parrec->{image_name},
                sysiface=>\@sysiface,
                ipaddresses=>\@ipaddresses,
                availabilityZone=>'Any'
             );
+            if (!$rec->{autodiscrecosrelease}){
+               $syncData{osrelease}=$parrec->{image_name};
+            }
             if ($parrec->{osclass}=~m/linux/i){
                $syncData{osclass}="LINUX";
             }

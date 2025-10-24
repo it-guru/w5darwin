@@ -359,6 +359,16 @@ sub extractAutoDiscData      # SetFilter Call ist Job des Aufrufers
             iomapped=>$iomappedRec,
             ForceLikeSearch=>1 
          );
+         if ($#targetid==-1){
+            @targetid=$chkobj->getIdByHashIOMapped(
+               "FLEXERAatW5::system",
+               {name=>$rec->{osrelease}." 64Bit"},
+               DEBUG=>\$d,
+               iomapped=>$iomappedRec,
+               ForceLikeSearch=>1
+            );
+         }
+
          if ($#targetid==0){
             my %e=(
                section=>'OSRELEASE',

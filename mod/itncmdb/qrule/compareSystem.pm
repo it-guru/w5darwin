@@ -164,10 +164,11 @@ sub qcheckRecord
                AssetKeyWords=>$assetKeyWords,
                cpucount=>$parrec->{vserverCpucount},
                memory=>$parrec->{vserverMemory},
-               osrelease=>$parrec->{vserverOs},
                ipaddresses=>\@ipaddresses
             );
-
+            if (!$rec->{autodiscrecosrelease}){
+               $syncData{osrelease}=$parrec->{vserverOs};
+            }
 
             $dataobj->QRuleSyncCloudSystem("ITENOS",
                $self,
