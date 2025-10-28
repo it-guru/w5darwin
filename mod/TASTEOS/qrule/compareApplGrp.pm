@@ -236,7 +236,7 @@ sub qcheckRecord
       ($_->{isembedded} eq "0" && 
        $_->{isnetswitch} eq "0" &&
        $_->{isfirewall} eq "0" &&
-       $_->{isrouter})
+       $_->{isrouter}  eq "0")
    } @l);
 
    my %ul;
@@ -248,9 +248,12 @@ sub qcheckRecord
    my @systemid;
    map({push(@systemid,$_->{systemid});} @l);
 
-   #printf STDERR ("l=%s\n",Dumper(\@l));
-   #printf STDERR ("n=%d\n",$#l+1);
-   #printf STDERR ("systemid=%s\n",join(",",@systemid));
+   if (1){  # dump current state
+      printf STDERR ("l=%s\n",Dumper(\@l));
+      printf STDERR ("n=%d\n",$#l+1);
+      printf STDERR ("systemid=%s\n",join(",",@systemid));
+   }
+   push(@qmsg,"local relevant logical system count: ".($#systemid+1));
 
    my $laddobj=getModuleObject($dataobj->Config,"itil::addlnkapplgrpsystem");
    $laddobj->SetFilter({ applgrpid=>\$rec->{id} });
@@ -312,7 +315,7 @@ sub qcheckRecord
          }
       }
    }
-   #printf STDERR ("addl=%s\n",Dumper($ladd));
+   printf STDERR ("addl=%s\n",Dumper($ladd));
   # printf STDERR Dumper(\@l);
 
    $tsossys->ResetFilter();

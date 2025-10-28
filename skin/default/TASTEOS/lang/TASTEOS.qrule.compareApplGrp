@@ -1,2 +1,3 @@
 'TASTEOS::qrule::compareApplGrp'=>{de=>'TasteOS Sync',en=>'TasteOS Sync'},
 'no sync on w5base testenv allowed'=>{de=>'Syncronisation auf der W5Base Testumgebung ist nicht erlaubt'},
+'local relevant logical system count'=>{de=>'lokale relevante logische System-Anzahl'},
