@@ -315,7 +315,7 @@ sub qcheckRecord
          }
       }
    }
-   printf STDERR ("addl=%s\n",Dumper($ladd));
+  # printf STDERR ("addl=%s\n",Dumper($ladd));
   # printf STDERR Dumper(\@l);
 
    $tsossys->ResetFilter();
@@ -425,7 +425,6 @@ sub qcheckRecord
                }
             }
          }
-         #printf STDERR "delList=".Dumper(\@delList);
          foreach my $machineid (@delList){
             $tsosmac->ResetFilter();
             $tsosmac->ValidatedDeleteRecord({id=>$machineid});
@@ -486,13 +485,15 @@ sub qcheckRecord
             #
             msg(INFO,"check if known MachineID '$TSOSmachineid' for ".
                      "SystemName=$SystemName still exists");
-           
+            my $lastKnownTSOSmachineid; 
             if ($TSOSmachineid ne ""){ 
                $tsosmac->ResetFilter();
                $tsosmac->SetFilter({id=>$TSOSmachineid});
                ($mrec,$msg)=$tsosmac->getOnlyFirst(qw(id name systemid 
                                                          description
                                                          riskCategoryId));
+
+               $lastKnownTSOSmachineid=$TSOSmachineid;
                if (!defined($mrec)){
                   $tsosmac->Log(WARN,"backlog",
                            "TasteOS: ".
@@ -508,6 +509,9 @@ sub qcheckRecord
                $tsosmacrec->{salt}.=":" if ($tsosmacrec->{salt} ne "" &&
                                             $tsosmacrec->{systemid} ne "");
                $tsosmacrec->{salt}.=$tsosmacrec->{systemid};
+               if (defined($lastKnownTSOSmachineid)){
+                  $tsosmacrec->{lastKnownTSOSmachineid}=$lastKnownTSOSmachineid;
+               }
                my $newid=insNewTSOSmac($dataobj, $tsosmac,$opladdobj,
                                        $rec,$tsosmacrec,$lrec,
                                        $ladd->{systemid});
