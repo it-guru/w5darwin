@@ -114,6 +114,10 @@ sub new
             label             =>'MachineID create salt'),
 
       new kernel::Field::Link(
+            name              =>'lastKnownTSOSmachineid',
+            label             =>'lastKnownTSOSmachineid create salt'),
+
+      new kernel::Field::Link(
             name              =>'w5systemid',
             label             =>'System W5BaseID'),
 
@@ -372,7 +376,6 @@ sub InsertRecord
    my $dbclass="machines";
    my %new;
 
-
    my $tsossys=getModuleObject($self->Config,"TASTEOS::tsossystem");
 
    my $uarec=$tsossys->getUnassignedMachinesRec();
@@ -415,6 +418,7 @@ sub InsertRecord
       }
    }
    if ($foundMachineIdInUnassinged){
+      msg(INFO,"found '$newrec->{name}' in Unassinged");
       return($foundMachineIdInUnassinged);
    }
 
@@ -436,6 +440,9 @@ sub InsertRecord
       }
    }
    if (exists($newrec->{lastKnownTSOSmachineid})){
+      msg(INFO,"TasteOS request machine-id '$newrec->{lastKnownTSOSmachineid}'".
+               " request for $newrec->{name} overwrite ".
+               "by lastKnownTSOSmachineid");
       $new{'machine-id'}=$newrec->{lastKnownTSOSmachineid};
    }
 

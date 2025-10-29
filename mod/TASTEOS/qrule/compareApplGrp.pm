@@ -503,6 +503,9 @@ sub qcheckRecord
                   $TSOSmachineid=undef;
                }
             }
+            msg(INFO,"post TastOS exist check of '$SystemName' ".
+                     "TSOSmachineid='$TSOSmachineid' ".
+                     "lastKnownTSOSmachineid='$lastKnownTSOSmachineid'");
             #################################################################
             if ($TSOSmachineid eq ""){
                $tsosmacrec->{salt}=$tsosmacrec->{machineNumber};
