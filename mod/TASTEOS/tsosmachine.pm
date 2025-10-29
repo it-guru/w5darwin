@@ -435,6 +435,10 @@ sub InsertRecord
          $new{$dk}=$new{$dk}->[0] if (ref($new{$dk}) eq "ARRAY");
       }
    }
+   if (exists($newrec->{lastKnownTSOSmachineid})){
+      $new{'machine-id'}=$newrec->{lastKnownTSOSmachineid};
+   }
+
    my $d=$self->CollectREST(
       dbname=>'TASTEOS',
       requesttoken=>"INS.".$newrec->{name}.time(),
