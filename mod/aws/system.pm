@@ -61,6 +61,18 @@ sub new
                 label         =>'Name'),
 
       new kernel::Field::Text(
+                name          =>'SSMagentSystemname',
+                htmldetail    =>'NotEmpty',
+                searchable    =>0,
+                label         =>'SSM Agent Systemname'),
+
+      new kernel::Field::Text(
+                name          =>'SSMagentOSrelease',
+                htmldetail    =>'NotEmpty',
+                searchable    =>0,
+                label         =>'SSM Agent OSRelase'),
+
+      new kernel::Field::Text(
                 name          =>'status',
                 label         =>'Status'),
 
@@ -163,7 +175,8 @@ sub new
 
    );
    $self->{'data'}=\&DataCollector;
-   $self->setDefaultView(qw(id ipaddress accountid vpcid cdate));
+   $self->setDefaultView(qw(id name SSMagentSystemname 
+                             ipaddress accountid vpcid cdate));
    return($self);
 }
 
@@ -192,6 +205,7 @@ sub DataCollector
    try {
       my $stscred=$self->GetCred4AWS($AWSAccount,$AWSRegion);
       my $ec2=Paws->service('EC2',credentials=>$stscred,region =>$AWSRegion);
+      my $ssm=Paws->service('SSM',credentials=>$stscred,region =>$AWSRegion);
 
       if (in_array(\@view,"azoneid")){
          my $az=$ec2->DescribeAvailabilityZones();
@@ -236,6 +250,8 @@ sub DataCollector
                       accountid=>$AWSAccount,
                       region=>$AWSRegion,
                       name=>$instance->{InstanceId},
+                      SSMagentSystemname=>undef,
+                      SSMagentOSrelease=>undef,
                       tags=>\%tag,
                       autoscalinggroup=>$tag{'aws:autoscaling:groupName'},
                       cdate=>$cdate,
@@ -246,6 +262,28 @@ sub DataCollector
                   if (length($tag{Name})>2){
                      $rec->{name}=$tag{Name};
                      $rec->{name}=~s/\..*//;
+                  }
+                  if (defined($ssm)){ # search needs to be evaled because
+                                      # in some cases a JSON exection happens
+                     eval('
+                     my $SsmItr=$ssm->DescribeInstanceInformation(
+                        Filters=>[
+                           {
+                               "Key"=> "InstanceIds",
+                               "Values"=> [$instance->{InstanceId}]
+                           }
+                        ]
+                     );
+                     foreach my $ssmrec (@{$SsmItr->InstanceInformationList()}){
+                        $rec->{SSMagentSystemname}=lc($ssmrec->{ComputerName});
+                        # remove posible domain or workgroup names
+                        $rec->{SSMagentSystemname}=~s/\..*$//;
+                        $rec->{SSMagentOSrelease}=
+                           $ssmrec->{PlatformName}." ".
+                           $ssmrec->{PlatformVersion};
+                        #p $ssmrec;
+                     }
+                     ');
                   }
 
                   if (in_array(\@view,[qw(all imagename imageowner platform)])){
