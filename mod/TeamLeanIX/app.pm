@@ -102,8 +102,16 @@ sub new
 
       new kernel::Field::Text(     
             name          =>'tags',
-            dataobjattr   =>'source_tags',
+            dataobjattr   =>'_source.tags',
             label         =>'Tags'),
+
+      new kernel::Field::Date(
+            name          =>'srcload',
+            history       =>0,
+            group         =>'source',
+            label         =>'Source-Load',
+            dataobjattr   =>'_source.dtLastLoad'),
+
    );
    $self->setDefaultView(qw(id ictoNumber applicationType name));
    $self->LimitBackend(1000);

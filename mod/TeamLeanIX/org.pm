@@ -65,6 +65,21 @@ sub new
             dataobjattr   =>'_source.description',
             searchable    =>0,
             label         =>'description'),
+
+      new kernel::Field::Date(
+            name          =>'srcload',
+            history       =>0,
+            group         =>'source',
+            label         =>'Source-Load',
+            dataobjattr   =>'_source.dtLastLoad'),
+
+      new kernel::Field::MDate(
+            name          =>'mdate',
+            group         =>'source',
+            label         =>'Modification-Date',
+            dataobjattr   =>'_source.lastUpdated'),
+
+
    );
    $self->setDefaultView(qw(id name parentId));
    $self->LimitBackend(1000);
