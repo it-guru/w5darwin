@@ -301,21 +301,26 @@ sub JsonObjectLoad_FullLoad
       sub {
          my ($session,$meta)=@_;
          my $ESjqTransform=
-             "if (length == 0) then ".
-                " { index: { _id: \"__noop__\" } }, ".
-                " { fullname: \"noop\" } ".
-                "else  .[] | ".
-                "select(".
-                " (.\"{Identifier}\" != null) and  ".
-                " (.\"{Identifier}\" != \"\") ".
-                ") |".
-                "{ index: { _id: (.\"{Identifier}\" | ".
-                   "gsub(\"\%252\"; \":\")) ".
-                   "}".
-                " } , ".
-                "(. + {dtLastLoad: \$dtLastLoad, ".
-                "fullname: (\": \" +.\"{name}\")}) ".
-             "end";
+             "try( ".
+             "fromjson | ".
+             "if (type!=\"array\" or length == 0) ".
+             "then  error(\"unexpected input - no array\") ".
+             "else  .[] | ".
+             "select(".
+             " (.\"{Identifier}\" != null) and  ".
+             " (.\"{Identifier}\" != \"\") ".
+             ") |".
+             "{ index: { _id: (.\"{Identifier}\" | ".
+                "gsub(\"\%252\"; \":\")) ".
+                "}".
+             " } , ".
+             "(. + {dtLastLoad: \$dtLastLoad, ".
+             "fullname: (\": \" +.\"{name}\")}) ".
+             "end) ".
+             "catch( ".
+             " { index: { _id: \"__noop__\" } }, ".
+             " { fullname: \"noop\" } ".
+             ")";
          return("SHELL","cat '$filename'",[],$ESjqTransform);
       },$indexname,{
         jq=>{
