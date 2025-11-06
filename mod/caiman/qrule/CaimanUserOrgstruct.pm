@@ -231,6 +231,7 @@ sub qcheckRecord
          $caimanorg->SetFilter({toumgr=>\$caimanid});
          foreach my $caimanrec ($caimanorg->getHashList(
                               qw(torgoid name parentid parent shortname))){
+            msg(INFO,"try to add bossrec for ciamid $caimanrec->{torgoid}");
             if ($caimanrec->{torgoid} ne ""){
                @bossgrpsrcid=grep(!/^$caimanrec->{torgoid}$/,@bossgrpsrcid);
             }
