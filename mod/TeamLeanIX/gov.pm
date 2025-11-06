@@ -303,11 +303,23 @@ sub ORIGIN_Load
 
          if ($session->{loopCount}==0){
             $session->{LastRequest}=0;
-            my $ESjqTransform=".[] |".
-                            "{ index: { _id: .governanceUniqueId } } , ".
-                            "(. + {dtLastLoad: \$dtLastLoad, ".
-                            "fullname: (.ictoNumber+\": \" +.name)})";
-
+            my $ESjqTransform=
+               "try( ".
+               "fromjson | ".
+               "if (type!=\"array\" or length == 0) ".
+               "then error(\"unexpected input - no array\") ".
+               "else  .[] |".
+               "{ index: { _id: .governanceUniqueId } } , ".
+               "(. + {".
+               "dtLastLoad: \$dtLastLoad, ".
+               "fullname: (.ictoNumber+\": \" +.name)".
+               "}) ".
+               "end ) ".
+               "catch (".
+               "{ index: { _id: \"__noop__\" } },".
+               "{ fullname: \"noop\" } ".
+               ")";
+         
             return($self->ORIGIN_Load_BackCall(
                 "/v1/govs",$credentialName,$indexname,
                            $ESjqTransform,$opNowStamp,
@@ -316,22 +328,27 @@ sub ORIGIN_Load
          }
          elsif ($session->{loopCount}==1){
             $session->{LastRequest}=1;
-            my $ESjqTransform="if (length == 0) ".
-                              "then ".
-                              " { index: { _id: \"__noop__\" } }, ".
-                              " { fullname: \"noop\" } ".
-                              "else .[] |".
-                              "select(".
-                              " (.externalId | type == \"string\") and ".
-                              " (.externalId | startswith(\"SPL-\")) ".
-                              ") |".
-                              "{ index: { _id: .platformUniqueId } } , ".
-                              "(. + {".
-                              "dtLastLoad: \$dtLastLoad, ".
-                              "fullname: (.externalId+\": \" +.name),".
-                              "ictoNumber: .externalId ".
-                              "}) ".
-                              "end";
+            my $ESjqTransform=
+               "try( ".
+               "fromjson | ".
+               "if (type!=\"array\" or length == 0) ".
+               "then error(\"unexpected input - no array\") ".
+               "else  .[] |".
+               "select(".
+               " (.externalId | type == \"string\") and ".
+               " (.externalId | startswith(\"SPL-\")) ".
+               ") |".
+               "{ index: { _id: .platformUniqueId } } , ".
+               "(. + {".
+               "dtLastLoad: \$dtLastLoad, ".
+               "fullname: (.externalId+\": \" +.name),".
+               "ictoNumber: .externalId ".
+               "}) ".
+               "end ) ".
+               "catch (".
+               " { index: { _id: \"__noop__\" } }, ".
+               " { fullname: \"noop\" } ".
+               ")";
 
             return($self->ORIGIN_Load_BackCall(
                 "/v1/platforms",$credentialName,$indexname,

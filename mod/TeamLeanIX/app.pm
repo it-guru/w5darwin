@@ -187,20 +187,25 @@ sub ORIGIN_Load
    my ($res,$emsg)=$self->ESrestETLload($self->getESindexDefinition(),
       sub {
          my ($session,$meta)=@_;
-         my $ESjqTransform="if (length == 0) ".
-                           "then ".
-                           " { index: { _id: \"__noop__\" } }, ".
-                           " { fullname: \"noop\" } ".
-                           "else  .[] | ".
-                            "select(".
-                            " (.applicationUniqueId | type == \"string\") and ".
-                            " (.applicationUniqueId != null) and  ".
-                            " (.applicationUniqueId != \"\") ".
-                            ") |".
-                            "{ index: { _id: .applicationUniqueId } } , ".
-                            "(. + {dtLastLoad: \$dtLastLoad, ".
-                            "fullname: (.ictoNumber+\": \" +.name)}) ".
-                            "end";
+         my $ESjqTransform=
+            "try ( ".
+            "fromjson | ".
+            "if (type!=\"array\" or length == 0) ".
+            "then error(\"unexpected input - no array\") ".
+            "else  .[] | ".
+            "select(".
+            " (.applicationUniqueId | type == \"string\") and ".
+            " (.applicationUniqueId != null) and  ".
+            " (.applicationUniqueId != \"\") ".
+            ") |".
+            "{ index: { _id: .applicationUniqueId } } , ".
+            "(. + {dtLastLoad: \$dtLastLoad, ".
+            "fullname: (.ictoNumber+\": \" +.name)}) ".
+            "end) ".
+            "catch (".
+            " { index: { _id: \"__noop__\" } }, ".
+            " { fullname: \"noop\" } ".
+            ")";
 
          return($self->ORIGIN_Load_BackCall(
              "/v1/apps",$credentialName,$indexname,$ESjqTransform,$opNowStamp,

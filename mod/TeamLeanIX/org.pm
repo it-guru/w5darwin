@@ -122,20 +122,25 @@ sub ORIGIN_Load
         }
       },sub {
          my ($session,$meta)=@_;
-         my $ESjqTransform="if (length == 0) ".
-                           "then ".
-                           " { index: { _id: \"__noop__\" } }, ".
-                           " { fullname: \"noop\" } ".
-                           "else .[] |".
-                           "select(".
-                           " (.id | type == \"string\") and ".
-                           " (.id != null) and  ".
-                           " (.id != \"\") ".
-                           ") |".
-                           "{ index: { _id: .id } } , ".
-                           "(. + {dtLastLoad: \$dtLastLoad, ".
-                           "fullname: (.id+\": \" +.name)}) ".
-                           "end";
+         my $ESjqTransform=
+            "try ( ".
+            "fromjson | ".
+            "if (type != \"array\" or length == 0) ".
+            "then error(\"unexpected input - no array\") ".
+            "else .[] |".
+            "select(".
+            " (.id | type == \"string\") and ".
+            " (.id != null) and  ".
+            " (.id != \"\") ".
+            ") |".
+            "{ index: { _id: .id } } , ".
+            "(. + {dtLastLoad: \$dtLastLoad, ".
+            "fullname: (.id+\": \" +.name)}) ".
+            "end) ".
+            "catch(".
+            " { index: { _id: \"__noop__\" } }, ".
+            " { fullname: \"noop\" } ".
+            ")";
 
          return($self->ORIGIN_Load_BackCall(
              "/v1/orgs",$credentialName,$indexname,$ESjqTransform,$opNowStamp,
