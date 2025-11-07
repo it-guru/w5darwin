@@ -353,6 +353,7 @@ sub extractAutoDiscData      # SetFilter Call ist Job des Aufrufers
             # at this point, there can be nativ scandata be patched to correct
             # scan informations!  
             my $version=$s->{fullversion};
+            next if ($version eq ""); # skip software with missing version
             $version=~s/-.*$//;  # remove package version
             my %e=(
                section=>'SOFTWARE',
@@ -367,7 +368,7 @@ sub extractAutoDiscData      # SetFilter Call ist Job des Aufrufers
                              $s->{software}
             );
             # Flexera Agent ist immer Hostbasiert installiert.
-            if ($s->{software}=~m/^FlexNet Inventory Agent/i){
+            if ( ($s->{software}=~m/^FlexNet Inventory Agent/i) ){
                $e{forcesysteminst}=1;
                $e{allowautoremove}=1;
                $e{quality}=100;  #flexera weiss am besten über flexera bescheid
