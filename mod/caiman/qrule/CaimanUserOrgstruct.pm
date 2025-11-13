@@ -453,13 +453,14 @@ sub addGrpLinkToUser
          my @origroles;
          if (defined($lnkrec->{roles})){
             @origroles=@{$lnkrec->{roles}};
+            $oldrolestring=join(",",sort(@{$lnkrec->{roles}}));
          }
          if (!in_array($roles,"RBoss")){
             my @orgRoles=grep(!/^RBoss.*$/,orgRoles()); # RBoss muss bleiben!
             # RBoss wird von einer anderen CAIMAN QualityRule behandelt und 
             # RBoss2 muss in Darwin vergeben werden können (z.B. für 
-            # Reporting Rechte) - d.h. RBoss2 steht nicht unter CAIMAN Authorität
-            $oldrolestring=join(",",sort(@{$lnkrec->{roles}}));
+            # Reporting Rechte) - d.h. RBoss2 steht nicht unter 
+            #                     CAIMAN Authorität
             foreach my $r (@{$lnkrec->{roles}}){
                push(@oldroles,$r) if (!in_array(\@orgRoles,$r));
             }
