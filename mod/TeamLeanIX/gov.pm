@@ -115,7 +115,20 @@ sub new
                   }
                }
                @orgnames=sort(@orgnames);
-               return($orgnames[0]);
+               my $orgstring=$orgnames[0];
+               if (my ($hubid,$ostr)=$orgstring=~m/^(HUB-[0-9]{3,5})\s+(.*)$/){
+                  my $vou=$self->getParent->getPersistentModuleObject(
+                      "vou","TS::vou"
+                  );
+                  if (defined($vou)){
+                     $vou->SetFilter({cistatusid=>\'4',hubid=>\$hubid});
+                     my ($hrec)=$vou->getOnlyFirst(qw(name shortname));
+                     if (defined($hrec) && $hrec->{shortname} ne ""){
+                        $orgstring="E-".$hubid." ".$hrec->{shortname}." ".$ostr;
+                     }
+                  }
+               }
+               return($orgstring);
             }),
 
       new kernel::Field::Group(
