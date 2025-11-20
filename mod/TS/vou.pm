@@ -83,6 +83,7 @@ sub new
                 name          =>'rampupid',
                 label         =>'Ramp-Up ID',
                 htmleditwidth =>'100px',
+                htmldetail    =>'NotEmpty',
                 dataobjattr   =>'vou.rampupid'),
 
       new kernel::Field::Text(
@@ -563,15 +564,12 @@ sub Validate
          $newrec->{hubid}=$hubid;
       }
    }
-   if (!defined($oldrec) || defined($newrec->{rampupid})){
-      my $cistatusid=effVal($oldrec,$newrec,"cistatusid");
-      if ($cistatusid>2 && $cistatusid<6){
-         my $rampupid=$newrec->{rampupid};
-         if (!($rampupid=~m/^\s*$/) && 
-             !($rampupid=~m/^XH[0-9_]+$/)){
-            $self->LastMsg(ERROR,"invalid Ramp-Up ID specified");
-            return(0);
-         }
+   if (defined($newrec->{rampupid})){
+      my $rampupid=$newrec->{rampupid};
+      if (!($rampupid=~m/^\s*$/) && 
+          !($rampupid=~m/^XH[0-9_]+$/)){
+         $self->LastMsg(ERROR,"invalid Ramp-Up ID specified");
+         return(0);
       }
    }
    my $hubid=effVal($oldrec,$newrec,"hubid");
