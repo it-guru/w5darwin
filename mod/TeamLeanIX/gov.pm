@@ -98,6 +98,31 @@ sub new
             }),
 
       new kernel::Field::Text(
+            name          =>'hubid',
+            label         =>'HUB-ID',
+            htmldetail    =>'NotEmpty',
+            depend        =>['orgs'],
+            group         =>'orgs',
+            onRawValue    =>sub{
+               my $self=shift;
+               my $current=shift;
+               my $fld=$self->getParent->getField("orgs",$current);
+               my $orgs=$fld->RawValue($current);
+
+               my $d;
+               if (ref($orgs) eq "ARRAY"){
+                  foreach my $orgrec (@{$orgs}){
+                     my $org=$orgrec->{name};
+                     if (my ($pref,$hubid)=$org=~m/^(E-){0,1}(HUB-[0-9]+)/){
+                        $d=$hubid;
+                        last;
+                     }
+                  }
+               }
+               return($d);
+            }),
+
+      new kernel::Field::Text(
             name          =>'organisation',
             label         =>'Organisation',
             group         =>'orgs',
@@ -143,7 +168,7 @@ sub new
             name          =>'orgareaid',
             label         =>'OrgAreaID',
             group         =>'orgs',
-            depend        =>['organisation'],
+            depend        =>['orgs','organisation'],
             onRawValue    =>sub{
                my $self=shift;
                my $current=shift;
