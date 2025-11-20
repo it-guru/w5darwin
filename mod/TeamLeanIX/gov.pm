@@ -63,6 +63,7 @@ sub new
       new kernel::Field::Text(     
             name          =>'ictoNumber',
             caseignore    =>1,
+            ElasticType   =>'keyword',
             dataobjattr   =>'_source.ictoNumber',
             label         =>'ictoNumber'),
 
