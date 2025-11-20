@@ -1,6 +1,6 @@
-package tsciam::ext::userImport;
+package caiman::ext::userImport;
 #  W5Base Framework
-#  Copyright (C) 2016  Hartmut Vogler (it@guru.de)
+#  Copyright (C) 2025  Hartmut Vogler (it@guru.de)
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -45,11 +45,19 @@ sub getImportIDFieldHelp
 {
    my $self=shift;
 
-   my $o=getModuleObject($self->getParent->Config,'tsciam::user');
-   my $txt='CIAM: ';
-   $txt.=$o->getField('tcid')->Label();
-   $txt.='|';
-   $txt.=$o->getField('wiwid')->Label();
+   my $o=getModuleObject($self->getParent->Config,'caiman::user');
+   my $txt='CAIMAN: ';
+   my $ftxt='';
+   my $tcid=$o->getField('tcid');
+   if (defined($tcid)){
+      $ftxt.=$o->getField('tcid')->Label();
+   }
+   my $wiwid=$o->getField('wiwid');
+   if (defined($wiwid)){
+      $ftxt.='|' if ($ftxt ne "");
+      $ftxt.=$o->getField('wiwid')->Label();
+   }
+   $txt.=$ftxt;
 
    return($txt);
 }
@@ -63,7 +71,7 @@ sub processImport
    my $param=shift;
 
    return(undef) if (!$name);
-   my $ciam=getModuleObject($self->getParent->Config,"tsciam::user");
+   my $ciam=getModuleObject($self->getParent->Config,"caiman::user");
 
    my $flt; 
 
