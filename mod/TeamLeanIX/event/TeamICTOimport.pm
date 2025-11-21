@@ -100,7 +100,8 @@ sub TeamICTOimport
       $i->ResetFilter();
       $i->SetFilter({ictoNumber=>$ictoid});
       my ($remoterec)=$i->getOnlyFirst(qw(ictoNumber fullname description
-                                          shortname status organisation
+                                          shortname status 
+                                          organisation 
                                           orgareaid));
       if (defined($remoterec)){
          my $orgareaid=$remoterec->{orgareaid}; # ensure orgareaid is resolved
@@ -117,12 +118,10 @@ sub TeamICTOimport
       $m->ResetFilter();
       $m->SetFilter({name=>\$mandator,cistatusid=>\'4'});
       my ($mandatorid)=$m->getVal("grpid");
-      my $shortname=$irec->{name};
+      my $shortname=$irec->{shortname};
+
       $shortname="NONAME ".$irec->{ictoNumber} if ($shortname eq "");
       $shortname=~s/[^a-z0-9:-]/_/gi;
-
-      $shortname=$irec->{ictoNumber};  # setting name to icto because a real
-                                       # shortname does not exists anymore
 
       $agrp->ResetFilter();
       $agrp->SetFilter({name=>$shortname,applgrpid=>"!".$irec->{ictoNumber}});
@@ -131,12 +130,28 @@ sub TeamICTOimport
          $shortname.="_".$irec->{ictoNumber};
       }
 
-      my $cistatusid="4";
+      my $cistatusid;
+      if ($irec->{status} eq "Active"){
+         $cistatusid="4";
+      }
       if ($irec->{status} eq "Plan"){
          $cistatusid="3";
       }
+      if ($irec->{status} eq "PhaseIn"){
+         $cistatusid="3";
+      }
+      if ($irec->{status} eq "EndOfLife"){
+         $cistatusid="6";
+      }
+      if ($irec->{status} eq "PhaseOut"){
+         $cistatusid="6";
+      }
       if ($irec->{status} eq "Retired"){
          $cistatusid="6";
+      }
+      if (!defined($cistatusid)){
+         msg(WARN,sprintf("skip irec: %s\n",Dumper($irec)));
+         next;
       }
 
       my $responseorgid=$irec->{orgareaid};
