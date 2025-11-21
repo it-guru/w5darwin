@@ -61,6 +61,12 @@ sub new
             label         =>'Name'),
 
       new kernel::Field::Text(     
+            name          =>'shortname',
+            dataobjattr   =>'_source.shortname',
+            ignorecase    =>1,
+            label         =>'Shortname (gen by W5B)'),
+
+      new kernel::Field::Text(     
             name          =>'ictoNumber',
             caseignore    =>1,
             ElasticType   =>'keyword',
@@ -176,7 +182,10 @@ sub new
                                            "base::grp");
                my $newrec={};
                my $d;
-               $newrec->{fullname}=$current->{organisation};
+
+               my $fld=$self->getParent->getField("organisation",$current);
+               $newrec->{fullname}=$fld->RawValue($current);
+
                if (!defined($newrec->{fullname}) || $newrec->{fullname} eq ""){
                   # allow IOMapping by ictofullname - if there is no org
                   $newrec->{fullname}=$current->{fullname};
@@ -195,6 +204,11 @@ sub new
             dataobjattr   =>'_source.lifecycle.status',
             searchable    =>0,
             ignorecase    =>1,
+            label         =>'Status'),
+
+      new kernel::Field::Interface(     
+            name          =>'status',
+            dataobjattr   =>'_source.lifecycle.status',
             label         =>'Status'),
 
       new kernel::Field::Date(     
@@ -420,6 +434,23 @@ sub ESprepairRawRecord
    my $self=shift;
    my $rec=shift;
 
+
+   ########################################################################
+   # shorname generation
+   $rec->{'_source.shortname'}=$rec->{'_source.name'};
+   $rec->{'_source.shortname'}=~s/[^_ a-z0-9-].*$//i;
+   if (length($rec->{'_source.shortname'})<3){
+      $rec->{'_source.shortname'}=$rec->{'_source.name'};
+      $rec->{'_source.shortname'}=~s/[^_ a-z0-9-]+//i;
+      $rec->{'_source.shortname'}=~s/[^_ a-z0-9-].*$//i;
+   }
+   if (length($rec->{'_source.shortname'})<2){
+      $rec->{'_source.shortname'}=$rec->{'_source.ictoNumber'}."_".
+                                  $rec->{'_source.shortname'};
+   }
+   $rec->{'_source.shortname'}=limitlen($rec->{'_source.shortname'},35);
+   $rec->{'_source.shortname'}=~s/[_ -]+$//g;
+   ########################################################################
    foreach my $f (qw(_source.lifecycle.endOfLife
                      _source.lifecycle.phaseOut
                      _source.lifecycle.active)){
