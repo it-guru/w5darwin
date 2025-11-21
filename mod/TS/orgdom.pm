@@ -249,7 +249,7 @@ sub Validate
    my $newrec=shift;
    my $comprec=shift;
 
-   if (length(trim(effVal($oldrec,$newrec,"name")))<3){
+   if (length(trim(effVal($oldrec,$newrec,"name")))<2){
       $self->LastMsg(ERROR,
               "Name field not sufficient filled");
       return(0);
