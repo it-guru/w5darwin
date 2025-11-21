@@ -599,7 +599,7 @@ sub Validate
                  "a business owner is needed for selected CI-State");
          return(0);
       }
-      if (length(trim(effVal($oldrec,$newrec,"name")))<5){
+      if (length(trim(effVal($oldrec,$newrec,"name")))<2){
          $self->LastMsg(ERROR,
                  "Name field not sufficient filled");
          return(0);

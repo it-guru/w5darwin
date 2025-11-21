@@ -107,12 +107,12 @@ sub HubMasterOrgDomainImport
       push(@{$hubdom->{hubid}->{$irec->{hubid}}},$irec);
    }
 
-   if (0){  # sync orgdom Table
+   if (1){  # sync orgdom Table
       foreach my $irec (@hub){
          next if (!($irec->{domainid}=~m/^DOM/)); # C is rotz
          next if ($irec->{domainid} eq "");
          my $name=limitlen($irec->{domain},40,1);
-         if (length($name)<5){  # Some Domains are to short named
+         if (length($name)<2){  # Some Domains are to short named
             $name=$irec->{domainid}.": ".$name;
          } 
          my $domrec={
@@ -189,7 +189,6 @@ sub HubMasterOrgDomainImport
    $orgdomo->SetFilter({cistatusid=>'4'});
    $orgdomo->SetCurrentView(qw(id orgdomid name cistatusid ));
    my $orgdom=$orgdomo->getHashIndexed(qw(orgdomid));
-print STDERR Dumper($orgdom);
 
    #######################################################################
    #  -> Loading virutal org-units with id->hubid relation
@@ -215,7 +214,8 @@ print STDERR Dumper($orgdom);
    # from HubMaster we have aready the mapping hubid->domainid
    # and thereis exact ONE domainid for a hub.
 
-   # printf STDERR ("hubdom:%s\n",Dumper($hubdom));
+   #printf STDERR ("hubdom:%s\n",Dumper($hubdom));
+
 
    my %sMap;
    my %iMap;
@@ -241,94 +241,99 @@ print STDERR Dumper($orgdom);
    }
    #######################################################################
 
-#printf STDERR ("sMap:%s\n",Dumper(\%sMap));
+   #printf STDERR ("sMap:%s\n",Dumper(\%sMap));
 
 
 
    #######################################################################
    # Taget is to build vou(hubid) -> orgdom(domainid) -> ictoid 
 
+   my $nRelRec=0;
+   foreach my $irec (@tnlxdata){
+      next if ($irec->{hubid} eq "");
+      next if ($irec->{id} eq "");
+      next if ($irec->{ictoNumber} eq "");
+      my $hubid=$irec->{hubid};
+      my $ictoid=$irec->{id};
+      my $ictono=$irec->{ictoNumber};
 
-#   # create master mapping between vouid (W5BaseID Hub) and orgdomid (W5BaseID OrgDomain)
-#   foreach my $irec (@capeData){
-#      my ($CapeHubShortname)=$irec->{organisation}=~m/^\S*HUB\S+\s+(\S{3})\s+/;
-#      next if ($CapeHubShortname eq "");
-#      if (exists($v->{shortname}->{$CapeHubShortname})){
-#         my $w5vouid=$v->{shortname}->{$CapeHubShortname}->{id};
-#         my $orgdomainShortName=$irec->{orgdomainid};
-#         if (exists($orgdom->{orgdomid}->{$orgdomainShortName})){
-#            my $w5orgdomid=$orgdom->{orgdomid}->{$orgdomainShortName}->{id};
-#            #printf STDERR ("archapplid=%s orgdomainShortName=%s hubshort=%s w5vouid=%s w5orgdomid=%s\n",
-#            #          $irec->{archapplid},$orgdomainShortName,$CapeHubShortname,$w5vouid,$w5orgdomid);   
-#            my $ictono=$irec->{id};
-#            my $ictoid=$irec->{archapplid};
-#            $sMap{"sMap:".$w5orgdomid."-".$ictono."-".$w5vouid}={
-#               vouid=>$w5vouid,
-#               ictono=>$ictoid,
-#               ictoid=>$ictono,
-#               orgdomid=>$w5orgdomid
-#            };
-#         }
-#      }
-#      else{
-#        # msg(ERROR,"unknown HUP shortname from ".$irec->{archapplid}."/".$CapeHubShortname);
-#      }
-#   }
+      if (exists($voulst->{hubid}->{$hubid})){
+         my $w5vouid=$voulst->{hubid}->{$hubid}->{id};
+         if (exists($hubdom->{hubid}->{$hubid})){
+            my $domainid=$hubdom->{hubid}->{$hubid}->[0]->{domainid};
+            if (exists($orgdom->{orgdomid}->{$domainid})){
+               my $w5orgdomid=$orgdom->{orgdomid}->{$domainid}->{id};
+               my $orgdomname=$orgdom->{orgdomid}->{$domainid}->{name};
+               $nRelRec++;
+               msg(INFO,sprintf("--------------------\n"));
+               msg(INFO,sprintf(" nRelRec           : %s\n",$nRelRec));
+               msg(INFO,sprintf(" ICTO              : %s\n",$ictono));
+               msg(INFO,sprintf(" ICTO (internalId) : %s\n",$ictoid));
+               msg(INFO,sprintf(" HUB-ID            : %s\n",$hubid));
+               msg(INFO,sprintf(" VOU (internalId)  : %s\n",$w5vouid));
+               msg(INFO,sprintf(" DomainID          : %s\n",$domainid));
+               msg(INFO,sprintf(" W5DomainID        : %s\n",$w5orgdomid));
+               msg(INFO,sprintf(" OrgDomName        : %s\n",$orgdomname));
+               msg(INFO,sprintf("--------------------\n"));
+               $sMap{"sMap:".$w5orgdomid."-".$ictono."-".$w5vouid}={
+                  vouid=>$w5vouid,
+                  ictono=>$ictono,
+                  ictoid=>$ictoid,
+                  orgdomid=>$w5orgdomid
+               };
+            }
+         }
+      }
+   }
 
-exit(1);
+#print STDERR "iMap:".Dumper([values(%iMap)]);
+#print STDERR "sMap:".Dumper([values(%sMap)]);
 
-
-
-
-
-
-
-
-#
-#   if (1){
-#      my @opList;
-#      my $res=OpAnalyse(
-#            sub{  # comperator
-#               my ($a,$b)=@_;   # a=lnkadditionalci b=aus AM
-#               my $eq;
-#               if ($a->{vouid}  eq $b->{vouid} &&
-#                   $a->{orgdomid}  eq $b->{orgdomid} &&
-#                   $a->{ictoid}  eq $b->{ictoid} ){
-#                  $eq=1;
-#               }
-#               return($eq);
-#            },
-#            sub{  # oprec generator
-#              my ($mode,$oldrec,$newrec,%p)=@_;
-#              if ($mode eq "insert" || $mode eq "update"){
-#                 my $oprec={
-#                    OP=>$mode,
-#                    DATAOBJ=>'TS::lnkorgdom',
-#                    DATA=>{
-#                       vouid     =>$newrec->{vouid},
-#                       orgdomid  =>$newrec->{orgdomid},
-#                       ictoid    =>$newrec->{ictoid},
-#                       ictono    =>$newrec->{ictono}
-#                    }
-#                 };
-#                 return($oprec);
-#              }
-#              elsif ($mode eq "delete"){
-#                 my $oprec={
-#                    OP=>$mode,
-#                    DATAOBJ=>'TS::lnkorgdom',
-#                    IDENTIFYBY=>$oldrec->{id}
-#                 };
-#                 return($oprec);
-#              }
-#              return(undef);
-#            },
-#            [values(%iMap)],[values(%sMap)],\@opList
-#      );
-#      if (!$res){
-#         my $opres=ProcessOpList($orgdomo,\@opList);
-#      }
-#   }
+   if (1){
+      my @opList;
+      my $res=OpAnalyse(
+            sub{  # comperator
+               my ($a,$b)=@_;   # a=lnkadditionalci b=aus AM
+               my $eq;
+               if ($a->{vouid}  eq $b->{vouid} &&
+                   $a->{orgdomid}  eq $b->{orgdomid} &&
+                   $a->{ictoid}  eq $b->{ictoid} ){
+                  $eq=1;
+               }
+               return($eq);
+            },
+            sub{  # oprec generator
+              my ($mode,$oldrec,$newrec,%p)=@_;
+              if ($mode eq "insert" || $mode eq "update"){
+                 my $oprec={
+                    OP=>$mode,
+                    DATAOBJ=>'TS::lnkorgdom',
+                    DATA=>{
+                       vouid     =>$newrec->{vouid},
+                       orgdomid  =>$newrec->{orgdomid},
+                       ictoid    =>$newrec->{ictoid},
+                       ictono    =>$newrec->{ictono}
+                    }
+                 };
+                 return($oprec);
+              }
+              elsif ($mode eq "delete"){
+                 my $oprec={
+                    OP=>$mode,
+                    DATAOBJ=>'TS::lnkorgdom',
+                    IDENTIFYBY=>$oldrec->{id}
+                 };
+                 return($oprec);
+              }
+              return(undef);
+            },
+            [values(%iMap)],[values(%sMap)],\@opList
+      );
+      #printf STDERR Dumper(\@opList);
+      if (!$res){
+         my $opres=ProcessOpList($orgdomo,\@opList);
+      }
+   }
    return({exitcode=>0});
 }
 
