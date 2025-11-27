@@ -212,7 +212,9 @@ sub qcheckRecord
             my @ipaddresses;
             @sysiface=sort({$a->{name} cmp $b->{name}} values(%sysiface));
             @ipaddresses=sort({$a->{name} cmp $b->{name}} values(%ipaddresses));
-
+            if ($parrec->{SSMagentSystemname} ne ""){
+               unshift(@sysname,$parrec->{SSMagentSystemname});
+            }
             my %syncData=(
                id=>$parrec->{idpath},
                name=>\@sysname,
