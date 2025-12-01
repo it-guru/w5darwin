@@ -606,10 +606,12 @@ sub Validate
       }
    }
    if ($ocistatusid eq "4" && $ncistatusid ne "4"){
-      if (!$self->IsMemberOf($self->{CI_Handling}->{activator})){
-         $self->LastMsg(ERROR,
-                 "deactivation is only allowed for w5base.TS.vou members");
-         return(0);
+      if ($W5V2::OperationContext ne "QualityCheck"){
+         if ((!$self->IsMemberOf($self->{CI_Handling}->{activator}))){
+            $self->LastMsg(ERROR,
+                    "deactivation is only allowed for w5base.TS.vou members");
+            return(0);
+         }
       }
    }
 
