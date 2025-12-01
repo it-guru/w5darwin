@@ -154,7 +154,7 @@ sub SIMonNotify
          if (defined($urec)){
             $notifyparam{emailto}=\@emailto;
             $notifyparam{emailcc}=\@emailcc;
-            $notifyparam{emailbcc}=[qw(11634953080001)];
+            #$notifyparam{emailbcc}=[qw(11634953080001)];
             my $lastlang;
             if ($ENV{HTTP_FORCE_LANGUAGE} ne ""){
                $lastlang=$ENV{HTTP_FORCE_LANGUAGE};
