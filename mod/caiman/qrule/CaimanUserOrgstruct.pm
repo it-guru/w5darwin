@@ -289,7 +289,7 @@ sub qcheckRecord
          #msg(INFO,"---------------------------------------------------");
          #msg(INFO,"hinzufügen alternativer Arbeitsverhälnisse zu tCID=".
          #    $caimanrec->{tcid});
-         msg(INFO,"caimanrec: ".Dumper($caimanrec));
+         #msg(INFO,"caimanrec: ".Dumper($caimanrec));
          $caimanusr->ResetFilter();
 
          $caimanusr->SetFilter(
@@ -511,9 +511,17 @@ sub addGrpLinkToUser
       }
    }
    else{
-      msg(ERROR,"can not create caiman group tOuCID='$caimanrec->{torgoid}' ".
-                "for user '$urec->{email}'");
-      msg(ERROR,$self->getParent->LastMsg());
+      if ($W5V2::OperationContext ne "QualityCheck"){
+         msg(ERROR,"can not create caiman group ".
+                   "tOuCID='$caimanrec->{torgoid}' ".
+                   "for user '$urec->{email}'");
+         msg(ERROR,$self->getParent->LastMsg());
+      }
+      else{
+         $caimanorg->Log(ERROR,"basedata","failed to import CAIMAN orgunit ".
+                                          "tOuCID='$caimanrec->{torgoid}' ".
+                                          "for '$urec->{email}'");
+      }
    }
    return(undef);
 }
