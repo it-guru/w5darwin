@@ -86,6 +86,9 @@ sub processImport
    my $caiman=getModuleObject($self->getParent->Config,"caiman::orgarea");
    my $grp =getModuleObject($self->getParent->Config,"base::grp");
 
+   my $parentidref;
+   my $srclink;      # variable to store link for parentid search (logging)
+
    while($#idimp<20){
       my $chkid;
       $caiman->ResetFilter();
@@ -108,9 +111,20 @@ sub processImport
             push(@idimp,$caimanrec->{torgoid});
          }
          last if ($caimanrec->{parentid} eq "");
-         $flt={torgoid=>\$caimanrec->{parentid}};
+
+         $parentidref=$caimanrec->{parentid};
+         $srclink=$caimanrec->{urlofcurrentrec};
+
+         $flt={torgoid=>\$parentidref};
       }
       else{
+         if (defined($parentidref)){
+            $grp->Log(ERROR,"basedata","structure error ".
+                                       "parentid (tOrgOID)='$parentidref' ".
+                                       "can not be resolved in CAIMAN in ".
+                                       $srclink);
+         }
+
          if (!$param->{quiet}) {
             $self->getParent->LastMsg(ERROR,"invalid orgid $chkid in tree");
          }
