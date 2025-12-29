@@ -2,4 +2,7 @@
 'all desired fields has been updated'=>{de=>'alle geforderten Felder wurden aktualisiert'},
 'missconfigurued MCOS system detected'=>{de=>'fehlkonfiguriertes MCOS System erkannt'},
 'no MCOS record in AssetManager found'=>{de=>'kein MCOS Systemdatensatz in AssetManager gefunden'},
+'set system to inactiv due com errors to TPC in the past'=>{
+  de=>'setze System auf inaktiv wegen vergangener TPC Kommunikationsfehler'
+}
 
