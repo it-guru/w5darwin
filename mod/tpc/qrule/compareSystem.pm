@@ -95,6 +95,8 @@ sub qcheckRecord
    return(undef,undef) if ($rec->{srcsys} ne "TPC" &&
                            !($realsrcsys=~m/^TPC\d+$/));
 
+   return(undef,undef) if ($rec->{srcid} eq "");
+
    if (lc($rec->{srcsys}) eq "tpc"){ # migration TPC->TPC1
       $dataobj->ValidatedUpdateRecord($rec,{srcsys=>'TPC1'},{id=>$rec->{id}});
       $rec->{srcsys}="TPC1";
@@ -228,7 +230,19 @@ sub qcheckRecord
                         @chkl=$dataobj->getHashList(qw(id cistatusid));
                      }
                      #########################################################
-                     #
+                     # check if srcid is set to AssetManager already on other
+                     # active system (this can happend on com-errors to TPC*)
+                     my @altSystem;
+                     $dataobj->ResetFilter();
+                     $dataobj->SetFilter({
+                        srcid=>\$rec->{srcid},
+                        srcsys=>\'AssetManager',
+                        id=>"!".$rec->{id}
+                     });
+                     @altSystem=$dataobj->getHashList(qw(id cistatusid 
+                                                         name srcsys srcid));
+                  
+                     #########################################################
 
                      if ($#chkl!=-1){
                         my $msg="missconfigurued MCOS system detected";
@@ -240,10 +254,29 @@ sub qcheckRecord
                         $errorlevel=3 if ($errorlevel<3);
                      }
                      else{
-                        $forcedupd->{srcsys}='AssetManager';
-                        $forcedupd->{systemid}=$amrec->{systemid};
-                        my $m="MCOS transfer record to AssetManager datamaster";
-                        push(@qmsg,$m);
+                        if ($#altSystem==-1){
+                           $forcedupd->{srcsys}='AssetManager';
+                           $forcedupd->{systemid}=$amrec->{systemid};
+                           my $m="MCOS transfer record to ".
+                                 "AssetManager datamaster";
+                           push(@qmsg,$m);
+                        }
+                        else{
+                           if ($rec->{cistatusid}<6){
+                              $dataobj->Log(WARN,"basedata",
+                                 sprintf("set %s : %s entry(%s) to inactiv "
+                                         "due previous doublicate import",
+                                         $rec->{srcsys},$rec->{srcid},
+                                         $dataobj->Self()."::".$rec->{id}));
+                              $forcedupd->{cistatusid}='6';
+                              $forcedupd->{srcid}=undef;
+                              $forcedupd->{srcsys}=undef;
+                              my $m="set system to inactiv due com errors to ".
+                                    "TPC in the past";
+                              push(@qmsg,$m);
+
+                           }
+                        }
                      }
                   }
                   else{
