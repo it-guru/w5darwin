@@ -264,7 +264,7 @@ sub qcheckRecord
                         else{
                            if ($rec->{cistatusid}<6){
                               $dataobj->Log(WARN,"basedata",
-                                 sprintf("set %s : %s entry(%s) to inactiv "
+                                 sprintf("set %s : %s entry(%s) to inactiv ".
                                          "due previous doublicate import",
                                          $rec->{srcsys},$rec->{srcid},
                                          $dataobj->Self()."::".$rec->{id}));
