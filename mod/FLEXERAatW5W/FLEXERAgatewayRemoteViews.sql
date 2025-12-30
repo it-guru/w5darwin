@@ -39,7 +39,8 @@ select
    lower(FlexSystem.INSTANCECLOUDID) LW_INSTANCECLOUDID,
    cast(
       regexp_replace(regexp_replace(FlexSystem.W5BASEID,'\..+$',''),'[^0-9].*$','') 
-   as int) SYSTEMW5BASEID
+   as int) SYSTEMW5BASEID,
+   SYS_EXTRACT_UTC(SYSTIMESTAMP) MVIEW_SYSTIMESTAMP
 from dbo.customDarwinExportDevice@flexerap FlexSystem;
 
 CREATE INDEX "FLEXERA_system_id1"
@@ -123,25 +124,20 @@ grant select on "mview_FLEXERA_system2w5system" to W5I;
 create or replace synonym W5I.FLEXERA_system2w5system 
        for "mview_FLEXERA_system2w5system";
 
-
-' W5I_FLEXERA__systemidmap_of fällt demnächst weg!
-'
-'
-'create or replace view "W5I_FLEXERA_system" as
-'select "mview_FLEXERA_system".*,
-'       "W5I_FLEXERA__systemidmap_of".systemid
-'from "mview_FLEXERA_system"
-'   left outer join "W5I_FLEXERA__systemidmap_of"
-'        on "mview_FLEXERA_system".flexerasystemid=
-'           "W5I_FLEXERA__systemidmap_of".flexerasystemid;
+create or replace view "W5I_FLEXERA_system" as
+select "mview_FLEXERA_system".*
+from "mview_FLEXERA_system";
 
 grant select on "W5I_FLEXERA_system" to W5I;
 create or replace synonym W5I.FLEXERA_system for "W5I_FLEXERA_system";
 
+
+
+
 -- drop materialized view "mview_FLEXERA_instsoftware";
 create materialized view "mview_FLEXERA_instsoftware"
    refresh complete start with sysdate
-   next sysdate+(1/24)*18
+   NEXT TRUNC(SYSDATE) + 1/24*22
    as
 select ID,
        FLEXERADEVICEID FLEXERASYSTEMID,
@@ -178,7 +174,7 @@ create or replace synonym W5I.FLEXERA_instsoftware for "W5I_FLEXERA_instsoftware
 -- drop materialized view "mview_FLEXERA_instsoftwareraw";
 create materialized view "mview_FLEXERA_instsoftwareraw"
    refresh complete start with sysdate
-   next sysdate+(1/24)*18
+   NEXT TRUNC(SYSDATE) + 1/24*20
    as
 select ID,FLEXERADEVICEID,
        PRODUCTNAME, PUBLISHERNAME,
@@ -192,7 +188,8 @@ select ID,FLEXERADEVICEID,
        "Installer_Evidence"         INSTALLER_EVIDENCE,
        INSTDATE, 
        INVENTORYDATE,
-       DISCDATE
+       DISCDATE,
+       SYS_EXTRACT_UTC(SYSTIMESTAMP) MVIEW_SYSTIMESTAMP
 from dbo.customDarwinExportDeviceInstRAW@flexerap;
 
 CREATE INDEX "FLEXERA_instsoftwareraw_id1"

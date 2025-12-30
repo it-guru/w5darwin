@@ -57,8 +57,6 @@ sub new
                 name          =>'installer_evidence',
                 label         =>'installer_evidence',
                 dataobjattr   =>'FLEXERA_instsoftwareraw.installer_evidence'),
-
-
    );
    $self->setWorktable("FLEXERA_instsoftwareraw");
    $self->setDefaultView(qw(id 

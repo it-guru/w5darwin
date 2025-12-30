@@ -57,11 +57,11 @@ sub new
                 ignorecase    =>1,
                 dataobjattr   =>'FLEXERA_system.systemname'),
 
-      new kernel::Field::Text(
-                name          =>'systemid',
-                label         =>'SystemID',
-                ignorecase    =>1,
-                dataobjattr   =>'systemid'),
+#      new kernel::Field::Text(
+#                name          =>'systemid',
+#                label         =>'SystemID',
+#                ignorecase    =>1,
+#                dataobjattr   =>'systemid'),
 
       new kernel::Field::Text(
                 name          =>'systemdevicestatus',
@@ -222,6 +222,13 @@ sub new
                 label         =>'Hardware-Inventory-Date',
                 dataobjattr   =>'HARDWAREINVENTORYDATE'),
 
+      new kernel::Field::Date(
+                name          =>'srcload',
+                history       =>0,
+                htmldetail    =>'NotEmpty',
+                group         =>'source',
+                label         =>'Source-Load',
+                dataobjattr   =>'MVIEW_SYSTIMESTAMP')
    );
    $self->setWorktable("FLEXERA_system");
    $self->setDefaultView(qw(systemname systemid systemdevicestatus osrelease hwmodel 
@@ -397,7 +404,6 @@ sub extractAutoDiscData      # SetFilter Call ist Job des Aufrufers
                processable=>1,
                backendload=>$s->{scandate},
                autodischint=>$self->Self.": ".$rec->{id}.
-                             ": ".$rec->{systemid}.
                              ": ".$rec->{name}.":SOFTWARE :".$s->{id}.": ".
                              $s->{software}
             );
