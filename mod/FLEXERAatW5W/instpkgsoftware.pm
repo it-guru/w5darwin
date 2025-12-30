@@ -209,8 +209,15 @@ sub new
                 group         =>'source',
                 sqlorder      =>'desc',
                 label         =>'Last-Scan-Date',
-                dataobjattr   =>'FLEXERA_instsoftware.INVENTORYDATE')
+                dataobjattr   =>'FLEXERA_instsoftware.INVENTORYDATE'),
 
+      new kernel::Field::Date(
+                name          =>'srcload',
+                history       =>0,
+                htmldetail    =>'NotEmpty',
+                group         =>'source',
+                label         =>'Source-Load',
+                dataobjattr   =>'MVIEW_SYSTIMESTAMP')
    );
    $self->setWorktable("FLEXERA_instsoftware");
    $self->setDefaultView(qw(systemname publisher software fullversion 
