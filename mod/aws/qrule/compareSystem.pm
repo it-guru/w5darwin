@@ -233,7 +233,8 @@ sub qcheckRecord
             elsif ($parrec->{platform}=~m/win/i){
                $syncData{osclass}="WIN";
             }
-            if (($parrec->{imagename}=~m/^DevSecOps-eks-node-/) &&
+            if ((($parrec->{imagename}=~m/^DevSecOps-eks-node-/) ||
+                 ($parrec->{imagename}=~m/^DevSecOps-[a-z0-9]+-eks-node-/) ) &&
                 ($parrec->{imageowner} eq "784159863720")){
                $syncData{isclosedosenv}=1
             }
