@@ -137,7 +137,7 @@ create or replace synonym W5I.FLEXERA_system for "W5I_FLEXERA_system";
 -- drop materialized view "mview_FLEXERA_instsoftware";
 create materialized view "mview_FLEXERA_instsoftware"
    refresh complete start with sysdate
-   NEXT TRUNC(SYSDATE) + 1/24*22
+   next sysdate+(1/24)*5
    as
 select ID,
        FLEXERADEVICEID FLEXERASYSTEMID,
@@ -174,7 +174,7 @@ create or replace synonym W5I.FLEXERA_instsoftware for "W5I_FLEXERA_instsoftware
 -- drop materialized view "mview_FLEXERA_instsoftwareraw";
 create materialized view "mview_FLEXERA_instsoftwareraw"
    refresh complete start with sysdate
-   NEXT TRUNC(SYSDATE) + 1/24*20
+   next sysdate+(1/24)*7
    as
 select ID,FLEXERADEVICEID,
        PRODUCTNAME, PUBLISHERNAME,
