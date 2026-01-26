@@ -214,6 +214,8 @@ sub qcheckRecord
             @ipaddresses=sort({$a->{name} cmp $b->{name}} values(%ipaddresses));
             if ($parrec->{SSMagentSystemname} ne ""){
                unshift(@sysname,$parrec->{SSMagentSystemname});
+               push(@qmsg,"found SSMagent systemname: ".
+                          $parrec->{SSMagentSystemname});
             }
             my %syncData=(
                id=>$parrec->{idpath},
@@ -224,15 +226,24 @@ sub qcheckRecord
                sysiface=>\@sysiface,
                ipaddresses=>\@ipaddresses,
             );
-            if (!$rec->{autodiscrecosrelease}){
-               $syncData{osrelease}=$parrec->{image_name};
+            msg(INFO,"SSMagentOSrelease:".$parrec->{SSMagentOSrelease});
+            if ($parrec->{SSMagentOSrelease} ne ""){
+               $syncData{osrelease}=$parrec->{SSMagentOSrelease};
+               push(@qmsg,"found SSMagent osrelease: ".
+                          $parrec->{SSMagentOSrelease});
             }
-            if ($parrec->{platform}=~m/linux/i){
-               $syncData{osclass}="LINUX";
+            if (!exists($syncData{osrelease})){
+               if ($parrec->{platform}=~m/linux/i){
+                  $syncData{osclass}="LINUX";
+               }
+               elsif ($parrec->{platform}=~m/win/i){
+                  $syncData{osclass}="WIN";
+               }
             }
-            elsif ($parrec->{platform}=~m/win/i){
-               $syncData{osclass}="WIN";
-            }
+
+print STDERR "syncData=".Dumper(\%syncData);
+
+
             if ((($parrec->{imagename}=~m/^DevSecOps-eks-node-/) ||
                  ($parrec->{imagename}=~m/^DevSecOps-[a-z0-9]+-eks-node-/) ) &&
                 ($parrec->{imageowner} eq "784159863720")){
@@ -265,7 +276,6 @@ sub qcheckRecord
                push(@dataissue,$msg);
                $errorlevel=3 if ($errorlevel<3);
             }
-
             my $w5itcloudarea;
             if ($parrec->{accountid} ne ""){
                $cloudarea->ResetFilter();
