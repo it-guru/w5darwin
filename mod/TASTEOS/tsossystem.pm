@@ -258,6 +258,7 @@ sub UpdateRecord
    my $dflt=$self->decodeFilter2Query4TASTEOS($flt);
    my $id=$dflt->{id};
 
+
    if ($id eq ""){
       $self->LastMsg(ERROR,"update error - missing id");
       return(undef);
@@ -338,6 +339,12 @@ sub DeleteRecord
    my $oldrec=shift;  # hash ref
 
    my $dbclass="systems/$oldrec->{id}";
+
+   if (lc($oldrec->{id}) eq "3d359550-8129-4b70-a4c5-a66ec1399241"){
+      msg(ERROR,"Critial-ERROR! - Try to delete 'Unassigned Systems'");
+      Stacktrace();
+      return(undef);
+   }
 
    my ($d,$code,$message)=$self->CollectREST(
       dbname=>'TASTEOS',
