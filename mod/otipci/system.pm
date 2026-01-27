@@ -64,6 +64,16 @@ sub new
             label         =>'SystemID'),
 
       new kernel::Field::Text(     
+            name          =>'statusid',
+            dataobjattr   =>'_source.install_status.id',
+            label         =>'StatusID'),
+
+      new kernel::Field::Text(     
+            name          =>'status',
+            dataobjattr   =>'_source.install_status.name',
+            label         =>'Status'),
+
+      new kernel::Field::Text(     
             name          =>'sys_id',
             searchable    =>0,
             group         =>'source',
@@ -117,7 +127,7 @@ sub new
 #    "u_mandator_key": "A000A53E.000000"
 
 
-   $self->setDefaultView(qw(id ));
+   $self->setDefaultView(qw(id systemid name ));
    $self->LimitBackend(10000);
    return($self);
 }
@@ -150,6 +160,16 @@ sub SetFilter
    }
 
    return($self->SUPER::SetFilter(@_));
+}
+
+
+sub ESprepairRawRecord
+{
+   my $self=shift;
+   my $rec=shift;
+
+   print STDERR Dumper($rec);
+
 }
 
 
