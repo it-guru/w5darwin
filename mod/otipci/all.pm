@@ -260,15 +260,26 @@ sub ORIGIN_Load
          my $idgt=".";
          my $limit=1000;
          my $ESjqTransform=
+           "def to_utc:\n".
+           "capture(\"(?<dt>\\\\d{4}-\\\\d{2}-\\\\d{2})T".
+           "(?<tm>\\\\d{2}:\\\\d{2}:\\\\d{2})(?<off>[+-]\\\\d{2}):".
+           "(?<min>\\\\d{2})\")".
+           "| ( .dt + \"T\" + .tm + \"Z\" | fromdateiso8601 )".
+           "- ( ( .off | ltrimstr(\"+\") | tonumber ) * 3600 ".
+           "+ ( .min | tonumber ) * 60 ) ".
+           "| strftime(\"\%Y-\%m-\%d \%H:\%M:\%S\");\n\n".
             "try( ".
             "fromjson | ".
             "if (type!=\"array\" or length == 0) ".
             "then error(\"unexpected input - no array\") ".
-            "else  .[] |".
-            "{ index: { _id: .otip_id } } , ".
+            "else  .[] ".
+            "| .sys_created_on |= to_utc ".
+            "| .sys_updated_on |= to_utc ".
+            "| .install_date   |= to_utc ".
+            "| { index: { _id: .otip_id } } , ".
             "(. + {".
             "dtLastLoad: \$dtLastLoad, ".
-            "fullname: (\": \" +.class)".
+            "fullname: (.class+\": \"+.name)".
             "}) ".
             "end ) ".
             "catch (".
