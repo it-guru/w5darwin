@@ -54,7 +54,6 @@ sub new
 
       new kernel::Field::Text(     
             name          =>'name',
-            searchable    =>0,
             dataobjattr   =>'_source.u_real_name',
             label         =>'name'),
 
@@ -66,6 +65,7 @@ sub new
       new kernel::Field::Text(     
             name          =>'statusid',
             dataobjattr   =>'_source.install_status.id',
+            htmldetail    =>'0',
             label         =>'StatusID'),
 
       new kernel::Field::Text(     
@@ -74,11 +74,105 @@ sub new
             label         =>'Status'),
 
       new kernel::Field::Text(     
+            name          =>'opstatus',
+            dataobjattr   =>'_source.operational_status.name',
+            label         =>'Operational-Status'),
+
+
+      new kernel::Field::TextDrop(
+            name          =>'assignmentgroup',
+            label         =>'Assignment Group (OwnerGroup)',
+            dataobjattr   =>"_source.u_owner_group.name"),
+
+      new kernel::Field::TextDrop(
+            name          =>'iassignmentgroup',
+            label         =>'Incident Assignment Group (SupportGroup)',
+            dataobjattr   =>"_source.support_group.name"),
+
+
+      new kernel::Field::Text(     
             name          =>'sys_id',
             searchable    =>0,
             group         =>'source',
             dataobjattr   =>'_source.sys_id',
             label         =>'ServiceNow sys_id'),
+
+
+
+      new kernel::Field::Float(
+            name          =>'systemcorecount',
+            label         =>'System core count (new!)',
+            unit          =>'CPU',
+            precision     =>0,
+            dataobjattr   =>'_source.cpu_core_count'),
+
+      new kernel::Field::Float(
+            name          =>'systemcpucount',
+            label         =>'System CPU count',
+            unit          =>'CPU',
+            precision     =>0,
+            dataobjattr   =>'_source.cpu_count'),
+
+      new kernel::Field::Float(
+            name          =>'systemcpuspeed',
+            label         =>'System CPU speed',
+            unit          =>'MHz',
+            precision     =>0,
+            dataobjattr   =>'_source.cpu_speed'),
+
+      new kernel::Field::Text(
+            name          =>'systemcputype',
+            label         =>'System CPU type',
+            dataobjattr   =>'_source.cpu_type'),
+
+      new kernel::Field::Float(
+            name          =>'systemmemory',
+            label         =>'System Memory',
+            unit          =>'MB',
+            precision     =>0,
+            dataobjattr   =>'_source.ram'),
+
+
+      new kernel::Field::Text(
+            name          =>'systemos',
+            label         =>'System OS',
+            dataobjattr   =>'_source.os.name'),
+
+
+
+
+
+      new kernel::Field::Text(
+            name          =>'model',
+            label         =>'Model',
+            dataobjattr   =>'_source.model_id.name'),
+
+      new kernel::Field::Text(
+            name          =>'category',
+            label         =>'Category',
+            dataobjattr   =>'_source.category'),
+
+      new kernel::Field::Text(
+            name          =>'classification',
+            label         =>'Classification',
+            dataobjattr   =>'_source.classification.name'),
+
+      new kernel::Field::Text(
+            name          =>'usage',
+            label         =>'Usage',
+            dataobjattr   =>"_source.u_usage"),
+
+      new kernel::Field::Text(
+            name          =>'environment',
+            label         =>'Environment',
+            dataobjattr   =>'_source.environment.name'),
+
+
+      new kernel::Field::Text(
+            name          =>'altname',
+            label         =>'second name',
+            dataobjattr   =>'_source.u_customer_ci_name'),
+
 
       new kernel::Field::Text(     
             name          =>'class',
@@ -93,6 +187,13 @@ sub new
             group         =>'source',
             dataobjattr   =>'_source.category',
             label         =>'category'),
+
+      new kernel::Field::Text(     
+            name          =>'subcategory',
+            dataobjattr   =>'_source.subcategory',
+            label         =>'Sub-Category'),
+
+
 
       new kernel::Field::CDate(
             name          =>'cdate',
@@ -115,7 +216,21 @@ sub new
             searchable    =>0,
             group         =>'source',
             htmldetail    =>'NotEmpty',
-            label         =>'Source-Load')
+            label         =>'Source-Load'),
+
+      new kernel::Field::Text(
+            name          =>'srcsys',
+            group         =>'source',
+            label         =>'Source-System',
+            dataobjattr   =>'_source.u_data_source'),
+
+      new kernel::Field::Text(
+            name          =>'srcid',
+            group         =>'source',
+            label         =>'Source-Id',
+            dataobjattr   =>'_source.u_external_id'),
+
+
 
    );
 
