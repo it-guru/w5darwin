@@ -1,0 +1,9 @@
+'otipci::system'=>{
+  de=>'OTIP_CI: System',
+  en=>'OTIP_CI: System',
+},
+'fieldgroup.ipaddresses'=>{
+  de=>'IP-Adressen',
+  en=>'IP-Addresses',
+}
+

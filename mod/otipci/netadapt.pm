@@ -1,4 +1,4 @@
-package otipci::system;
+package otipci::netadapt;
 #  W5Base Framework
 #  Copyright (C) 2026  Hartmut Vogler (it@guru.de)
 #
@@ -49,19 +49,33 @@ sub new
       new kernel::Field::Text(     
             name          =>'fullname',
             searchable    =>0,
-            htmldetail    =>'0',
             dataobjattr   =>'_source.fullname',
             label         =>'fullname'),
 
       new kernel::Field::Text(     
             name          =>'name',
-            dataobjattr   =>'_source.u_real_name',
+            dataobjattr   =>'_source.ip_address',
             label         =>'name'),
 
       new kernel::Field::Text(     
-            name          =>'systemid',
-            dataobjattr   =>'_source.u_external_id',
-            label         =>'SystemID'),
+            name          =>'mac',
+            dataobjattr   =>'_source.mac_address',
+            label         =>'MAC-Address'),
+
+      new kernel::Field::Text(     
+            name          =>'ipaddress',
+            dataobjattr   =>'_source.ip_address',
+            label         =>'IP-Address'),
+
+      new kernel::Field::Text(     
+            name          =>'netmask',
+            dataobjattr   =>'_source.netmask',
+            label         =>'Netmask'),
+
+      new kernel::Field::Text(     
+            name          =>'shortdesc',
+            dataobjattr   =>'_source.short_description',
+            label         =>'Short-Description'),
 
       new kernel::Field::Text(     
             name          =>'statusid',
@@ -80,110 +94,19 @@ sub new
             label         =>'Operational-Status'),
 
 
-      new kernel::Field::TextDrop(
-            name          =>'assignmentgroup',
-            label         =>'Assignment Group (OwnerGroup)',
-            dataobjattr   =>"_source.u_owner_group.name"),
-
-      new kernel::Field::TextDrop(
-            name          =>'iassignmentgroup',
-            label         =>'Incident Assignment Group (SupportGroup)',
-            dataobjattr   =>"_source.support_group.name"),
-
-
-      new kernel::Field::Text(     
+      new kernel::Field::Text(
             name          =>'sys_id',
             searchable    =>0,
             group         =>'source',
             dataobjattr   =>'_source.sys_id',
             label         =>'ServiceNow sys_id'),
 
+      new kernel::Field::Text(     
+            name          =>'psys_id',
+            group         =>'source',
+            dataobjattr   =>'_source.psys_id',
+            label         =>'Parent sys_id'),
 
-
-      new kernel::Field::Float(
-            name          =>'systemcorecount',
-            label         =>'System core count (new!)',
-            unit          =>'CPU',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_core_count'),
-
-      new kernel::Field::Float(
-            name          =>'systemcpucount',
-            label         =>'System CPU count',
-            unit          =>'CPU',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_count'),
-
-      new kernel::Field::Float(
-            name          =>'systemcpuspeed',
-            label         =>'System CPU speed',
-            unit          =>'MHz',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_speed'),
-
-      new kernel::Field::Text(
-            name          =>'systemcputype',
-            htmldetail    =>'NotEmpty',
-            label         =>'System CPU type',
-            dataobjattr   =>'_source.cpu_type'),
-
-      new kernel::Field::Float(
-            name          =>'systemmemory',
-            label         =>'System Memory',
-            unit          =>'MB',
-            precision     =>0,
-            dataobjattr   =>'_source.ram'),
-
-
-      new kernel::Field::Text(
-            name          =>'systemos',
-            label         =>'System OS',
-            dataobjattr   =>'_source.os.name'),
-
-
-
-
-
-      new kernel::Field::Text(
-            name          =>'model',
-            label         =>'Model',
-            dataobjattr   =>'_source.model_id.name'),
-
-      new kernel::Field::Text(
-            name          =>'category',
-            label         =>'Category',
-            dataobjattr   =>'_source.category'),
-
-      new kernel::Field::Text(
-            name          =>'classification',
-            label         =>'Classification',
-            dataobjattr   =>'_source.classification.name'),
-
-      new kernel::Field::Text(
-            name          =>'usage',
-            label         =>'Usage',
-            dataobjattr   =>"_source.u_usage"),
-
-      new kernel::Field::Text(
-            name          =>'environment',
-            label         =>'Environment',
-            dataobjattr   =>'_source.environment.name'),
-
-
-      new kernel::Field::Text(
-            name          =>'altname',
-            label         =>'second name',
-            dataobjattr   =>'_source.u_customer_ci_name'),
-
-
-      new kernel::Field::SubList(
-            name          =>'ipaddresses',
-            label         =>'IP-Adresses',
-            searchable    =>0,
-            group         =>'ipaddresses',
-            vjointo       =>'otipci::netadapt',
-            vjoinon       =>['sys_id'=>'psys_id'],
-            vjoindisp     =>[qw(ipaddress status shortdesc)]),
 
       new kernel::Field::Text(     
             name          =>'class',
@@ -191,20 +114,6 @@ sub new
             group         =>'source',
             dataobjattr   =>'_source.class',
             label         =>'class'),
-
-      new kernel::Field::Text(     
-            name          =>'category',
-            searchable    =>0,
-            group         =>'source',
-            dataobjattr   =>'_source.category',
-            label         =>'category'),
-
-      new kernel::Field::Text(     
-            name          =>'subcategory',
-            dataobjattr   =>'_source.subcategory',
-            label         =>'Sub-Category'),
-
-
 
       new kernel::Field::CDate(
             name          =>'cdate',
@@ -253,8 +162,7 @@ sub new
 #    "u_mandator_key": "A000A53E.000000"
 
 
-   $self->setDefaultView(qw(id systemid name status model category 
-                            classification usage));
+   $self->setDefaultView(qw(id name status ipaddress netmask mac shortdesc));
    $self->LimitBackend(10000);
    return($self);
 }
@@ -283,7 +191,7 @@ sub SetFilter
    my $flt=$_[0];
 
    if (ref($flt) eq "HASH"){
-      $_[0]->{class}="cmdb_ci_server";
+      $_[0]->{class}="cmdb_ci_network_adapter";
    }
 
    return($self->SUPER::SetFilter(@_));
@@ -319,7 +227,7 @@ sub getDetailBlockPriority
    my $self=shift;
    my $grp=shift;
    my %param=@_;
-   return(qw(header default ipaddresses source));
+   return(qw(header default source));
 }
 
 
