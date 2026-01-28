@@ -1,0 +1,9 @@
+'otipci::appl'=>{
+  de=>'OTIP_CI: Anwendung',
+  en=>'OTIP_CI: Application',
+},
+'fieldgroup.systems'=>{
+  de=>'Systeme',
+  en=>'Systems',
+}
+

@@ -38,20 +38,34 @@ sub Init
                       "tmpl/welcome",
                       defaultacl=>['admin']);
    
+   $self->RegisterObj("itu.cfm.otipci.appl",
+                      "otipci::appl",
+                      prio=>20000,
+                      defaultacl=>['valid_user']);
+
    $self->RegisterObj("itu.cfm.otipci.system",
                       "otipci::system",
+                      prio=>20100,
                       defaultacl=>['valid_user']);
 
    $self->RegisterObj("itu.cfm.otipci.ipaddress",
                       "otipci::ipaddress",
+                      prio=>20200,
                       defaultacl=>['valid_user']);
 
    $self->RegisterObj("itu.cfm.otipci.netadapt",
                       "otipci::netadapt",
+                      prio=>20300,
+                      defaultacl=>['valid_user']);
+
+   $self->RegisterObj("itu.cfm.otipci.asset",
+                      "otipci::asset",
+                      prio=>20100,
                       defaultacl=>['valid_user']);
 
    $self->RegisterObj("itu.cfm.otipci.kernel",
                       "tmpl/welcome",
+                      prio=>90000,
                       defaultacl=>['admin']);
    
    $self->RegisterObj("itu.cfm.otipci.kernel.all",
