@@ -224,7 +224,7 @@ sub ORIGIN_Load
         },
         mappings=>{
            _meta=>{
-              version=>17
+              version=>20
            },
            properties=>{
               name    =>{type=>'text',
@@ -236,6 +236,20 @@ sub ORIGIN_Load
                            }
                          },
               class   =>{type=>'text',
+                         fields=> {
+                             keyword=> {
+                               type=> "keyword"
+                             }
+                           }
+                         },
+              sysid   =>{type=>'text',
+                         fields=> {
+                             keyword=> {
+                               type=> "keyword"
+                             }
+                           }
+                         },
+              psys_id=>{type=>'text',
                          fields=> {
                              keyword=> {
                                type=> "keyword"
@@ -260,31 +274,44 @@ sub ORIGIN_Load
          my $idgt=".";
          my $limit=1000;
          my $ESjqTransform=
-           "def to_utc:\n".
-           "capture(\"(?<dt>\\\\d{4}-\\\\d{2}-\\\\d{2})T".
-           "(?<tm>\\\\d{2}:\\\\d{2}:\\\\d{2})(?<off>[+-]\\\\d{2}):".
-           "(?<min>\\\\d{2})\")".
-           "| ( .dt + \"T\" + .tm + \"Z\" | fromdateiso8601 )".
-           "- ( ( .off | ltrimstr(\"+\") | tonumber ) * 3600 ".
-           "+ ( .min | tonumber ) * 60 ) ".
-           "| strftime(\"\%Y-\%m-\%d \%H:\%M:\%S\");\n\n".
+            "def to_utc: ".
+            "capture(\"(?<dt>\\\\d{4}-\\\\d{2}-\\\\d{2})T".
+            "(?<tm>\\\\d{2}:\\\\d{2}:\\\\d{2})(?<off>[+-]\\\\d{2}):".
+            "(?<min>\\\\d{2})\")".
+            "| ( .dt + \"T\" + .tm + \"Z\" | fromdateiso8601 )".
+            "- ( ( .off | ltrimstr(\"+\") | tonumber ) * 3600 ".
+            "+ ( .min | tonumber ) * 60 ) ".
+            "| strftime(\"\%Y-\%m-\%d \%H:\%M:\%S\"); ".
+            "".
+            "def to_utc_safe: ".
+            "if (type==\"string\") then to_utc else . end; ".
+            "".
             "try( ".
             "fromjson | ".
             "if (type!=\"array\" or length == 0) ".
             "then error(\"unexpected input - no array\") ".
             "else  .[] ".
-            "| .sys_created_on |= to_utc ".
-            "| .sys_updated_on |= to_utc ".
-            "| .install_date   |= to_utc ".
+            "| .sys_created_on |= to_utc_safe ".
+            "| .sys_updated_on |= to_utc_safe ".
+            "| .install_date   |= to_utc_safe ".
             "| { index: { _id: .otip_id } } , ".
             "(. + {".
             "dtLastLoad: \$dtLastLoad, ".
             "fullname: (.class+\": \"+.name)".
-            "}) ".
+            "} ".
+            "+ if has(\"cmdb_ci\") ".
+               "then {psys_id:.cmdb_ci.id} ".
+               "else ".
+                 "if has(\"nic\") ".
+                 "then {psys_id:.nic.id} ".
+                 "else {psys_id:\"none\"} ".
+                 "end ".
+               "end ".
+            ") ".
             "end ) ".
             "catch (".
             "{ index: { _id: \"__noop__\" } },".
-            "{ fullname: \"noop\" } ".
+            "{ fullname: \"noop\", error: . } ".
             ")";
          if ($session->{loopCount}==0){
             $session->{LastRequest}=0;
