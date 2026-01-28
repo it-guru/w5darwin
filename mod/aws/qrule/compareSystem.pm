@@ -241,8 +241,6 @@ sub qcheckRecord
                }
             }
 
-print STDERR "syncData=".Dumper(\%syncData);
-
 
             if ((($parrec->{imagename}=~m/^DevSecOps-eks-node-/) ||
                  ($parrec->{imagename}=~m/^DevSecOps-[a-z0-9]+-eks-node-/) ) &&
