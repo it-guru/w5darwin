@@ -299,7 +299,6 @@ sub DataCollector
                $_->{active}=0;
                $_->{description}.="\nW5Base set inactive due invalid char";
             }
-#            $_->{manager}=UTF8toLatin1($_->{manager});  # funktioniert nicht
             if (exists($_->{type}) && $_->{type} ne ""){
                $_->{type}=[split(/\s*,\s*/,$_->{type})];
             }
@@ -308,12 +307,15 @@ sub DataCollector
                   $_->{$k}=$constParam->{$k};
                }
             }
+            foreach my $utf8field (qw(manager u_deputy description)){
+               $_->{$utf8field}=utf8_to_latin1($_->{$utf8field});
+            }
          } @$data);
          @$data=grep({ 
             my $ok=1;
             $ok;
          } @$data);
-         print STDERR Dumper($data);
+         #print STDERR Dumper($data);
          return($data);
       }
    );
