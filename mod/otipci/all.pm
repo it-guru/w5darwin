@@ -46,146 +46,47 @@ sub new
 
       new kernel::Field::RecordUrl(),
 
+      new kernel::Field::Text(     
+            name          =>'class',
+            group         =>'source',
+            dataobjattr   =>'_source.class',
+            label         =>'class'),
 
-# "otip_version": "2025-12-01T06:05:44.0Z",
-#    "sys_id": "7a95c2f36bbcf0d047df9974ab63fb81",
-#    "otip_id": "7a95c2f36bbcf0d047df9974ab63fb81",
-#    "otip_deleted": true,
-#    "class": "cmdb_ci_server",
-#    "u_mandator_key": "A000A53E.000000"
-#
-#      new kernel::Field::Text(     
-#            name          =>'fullname',
-#            dataobjattr   =>'_source.fullname',
-#            ElasticType   =>'keyword',
-#            ignorecase    =>1,
-#            label         =>'Fullname'),
-#
-#      new kernel::Field::Text(     
-#            name          =>'name',
-#            ElasticType   =>'keyword',
-#            dataobjattr   =>'_source.name',
-#            ignorecase    =>1,
-#            label         =>'Name'),
-#
-#      new kernel::Field::Text(     
-#            name          =>'shortname',
-#            dataobjattr   =>'_source.shortname',
-#            ignorecase    =>1,
-#            label         =>'Shortname (gen by W5B)'),
-#
-#      new kernel::Field::Text(     
-#            name          =>'ictoNumber',
-#            caseignore    =>1,
-#            ElasticType   =>'keyword',
-#            dataobjattr   =>'_source.ictoNumber',
-#            label         =>'ictoNumber'),
-#
-#      new kernel::Field::Date(     
-#            name          =>'lifecycle_active',
-#            dataobjattr   =>'_source.lifecycle.active',
-#            dayonly       =>1,
-#            label         =>'Active'),
-#
-#      new kernel::Field::Text(
-#            name          =>'applmgremail',
-#            label         =>'Application Manager',
-#            searchable    =>0,
-#            depend        =>['contacts'],
-#            onRawValue    =>sub{
-#               my $self=shift;
-#               my $current=shift;
-#
-#               my $fld=$self->getParent->getField("contacts",$current);
-#               my $contacts=$fld->RawValue($current);
-#
-#               my $applmgremail;
-#               if (ref($contacts) eq "ARRAY"){
-#                  foreach my $c (@{$contacts}){
-#                     if (lc($c->{role}) eq lc("Application Manager - Cape") ||
-#                         lc($c->{role}) eq lc("Application Manager")){
-#                        $applmgremail=lc($c->{email});
-#                     }
-#                  }
-#               }
-#               return($applmgremail);
-#            }),
-#
-#      new kernel::Field::Text(
-#            name          =>'hubid',
-#            label         =>'HUB-ID',
-#            htmldetail    =>'NotEmpty',
-#            depend        =>['orgs'],
-#            group         =>'orgs',
-#            onRawValue    =>sub{
-#               my $self=shift;
-#               my $current=shift;
-#               my $fld=$self->getParent->getField("orgs",$current);
-#               my $orgs=$fld->RawValue($current);
-#
-#               my $d;
-#               if (ref($orgs) eq "ARRAY"){
-#                  foreach my $orgrec (@{$orgs}){
-#                     my $org=$orgrec->{name};
-#                     if (my ($pref,$hubid)=$org=~m/^(E-){0,1}(HUB-[0-9]+)/){
-#                        $d=$hubid;
-#                        last;
-#                     }
-#                  }
-#               }
-#               return($d);
-#            }),
-#
-#      new kernel::Field::Text(
-#            name          =>'organisation',
-#            label         =>'Organisation',
-#            group         =>'orgs',
-#            depend        =>['orgs'],
-#            onRawValue    =>sub{
-#               my $self=shift;
-#               my $current=shift;
-#
-#               my $fld=$self->getParent->getField("orgs",$current);
-#               my $orgs=$fld->RawValue($current);
-#
-#               my @orgnames;
-#               if (ref($orgs) eq "ARRAY"){
-#                  foreach my $orgrec (@{$orgs}){
-#                     push(@orgnames,$orgrec->{name});
-#                  }
-#               }
-#               @orgnames=sort(@orgnames);
-#               my $orgstring=$orgnames[0];
-#               if (my ($hubid,$ostr)=$orgstring=~m/^(HUB-[0-9]{3,5})\s+(.*)$/){
-#                  my $vou=$self->getParent->getPersistentModuleObject(
-#                      "vou","TS::vou"
-#                  );
-#                  if (defined($vou)){
-#                     $vou->SetFilter({cistatusid=>\'4',hubid=>\$hubid});
-#                     my ($hrec)=$vou->getOnlyFirst(qw(name shortname));
-#                     if (defined($hrec) && $hrec->{shortname} ne ""){
-#                        $orgstring="E-".$hubid." ".$hrec->{shortname}." ".$ostr;
-#                     }
-#                  }
-#               }
-#               return($orgstring);
-#            }),
-#
-#      new kernel::Field::Date(
-#            name          =>'srcload',
-#            history       =>0,
-#            group         =>'source',
-#            label         =>'Source-Load',
-#            dataobjattr   =>'_source.dtLastLoad'),
-#
-#      new kernel::Field::MDate(
-#            name          =>'mdate',
-#            group         =>'source',
-#            label         =>'Modification-Date',
-#            dataobjattr   =>'_source.lastUpdated'),
+      new kernel::Field::CDate(
+            name          =>'cdate',
+            group         =>'source',
+            label         =>'Creation-Date',
+            dataobjattr   =>'_source.sys_created_on'),
+
+      new kernel::Field::MDate(
+            name          =>'mdate',
+            group         =>'source',
+            label         =>'Modification-Date',
+            dataobjattr   =>'_source.sys_updated_on'),
+
+      new kernel::Field::Date(     
+            name          =>'srcload',
+            dataobjattr   =>'_source.otip_version',
+            ElasticType   =>'keyword',
+            searchable    =>0,
+            group         =>'source',
+            htmldetail    =>'NotEmpty',
+            label         =>'Source-Load'),
+
+      new kernel::Field::Text(
+            name          =>'srcsys',
+            group         =>'source',
+            label         =>'Source-System',
+            dataobjattr   =>'_source.u_data_source'),
+
+      new kernel::Field::Text(
+            name          =>'srcid',
+            group         =>'source',
+            label         =>'Source-Id',
+            dataobjattr   =>'_source.u_external_id'),
 
    );
-   $self->setDefaultView(qw(id ));
+   $self->setDefaultView(qw(id class ));
    $self->LimitBackend(10000);
    return($self);
 }

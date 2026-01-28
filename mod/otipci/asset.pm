@@ -1,4 +1,4 @@
-package otipci::system;
+package otipci::asset;
 #  W5Base Framework
 #  Copyright (C) 2026  Hartmut Vogler (it@guru.de)
 #
@@ -107,64 +107,15 @@ sub new
 
 
 
-      new kernel::Field::Float(
-            name          =>'systemcorecount',
-            label         =>'System core count (new!)',
-            unit          =>'CPU',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_core_count'),
-
-      new kernel::Field::Float(
-            name          =>'systemcpucount',
-            label         =>'System CPU count',
-            unit          =>'CPU',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_count'),
-
-      new kernel::Field::Float(
-            name          =>'systemcpuspeed',
-            label         =>'System CPU speed',
-            unit          =>'MHz',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_speed'),
-
       new kernel::Field::Text(
-            name          =>'systemcputype',
-            htmldetail    =>'NotEmpty',
-            label         =>'System CPU type',
-            dataobjattr   =>'_source.cpu_type'),
-
-      new kernel::Field::Float(
-            name          =>'systemmemory',
-            label         =>'System Memory',
-            unit          =>'MB',
-            precision     =>0,
-            dataobjattr   =>'_source.ram'),
-
-
-      new kernel::Field::Text(
-            name          =>'systemos',
-            label         =>'System OS',
-            dataobjattr   =>'_source.os.name'),
-
-
-
-
+            name          =>'serialno',
+            label         =>'Asset Serialnumber',
+            dataobjattr   =>'_source.serial_number'),
 
       new kernel::Field::Text(
             name          =>'model',
             label         =>'Model',
             dataobjattr   =>'_source.model_id.name'),
-
-      new kernel::Field::Text(
-            name          =>'category',
-            label         =>'Category',
-            dataobjattr   =>'_source.category'),
-
-      new kernel::Field::Text(
-            name          =>'classification',
-            label         =>'Classification',
-            dataobjattr   =>'_source.classification.name'),
 
       new kernel::Field::Text(
             name          =>'usage',
@@ -176,21 +127,6 @@ sub new
             label         =>'Environment',
             dataobjattr   =>'_source.environment.name'),
 
-
-      new kernel::Field::Text(
-            name          =>'altname',
-            label         =>'second name',
-            dataobjattr   =>'_source.u_customer_ci_name'),
-
-
-      new kernel::Field::SubList(
-            name          =>'ipaddresses',
-            label         =>'IP-Adresses',
-            searchable    =>0,
-            group         =>'ipaddresses',
-            vjointo       =>'otipci::netadapt',
-            vjoinon       =>['sys_id'=>'psys_id'],
-            vjoindisp     =>[qw(ipaddress status shortdesc)]),
 
       new kernel::Field::Text(     
             name          =>'category',
@@ -269,8 +205,7 @@ sub new
 #    "u_mandator_key": "A000A53E.000000"
 
 
-   $self->setDefaultView(qw(id systemid name status model category 
-                            classification usage));
+   $self->setDefaultView(qw(id assetid name status opstatus model serialno usage));
    $self->LimitBackend(10000);
    return($self);
 }
@@ -299,7 +234,7 @@ sub SetFilter
    my $flt=$_[0];
 
    if (ref($flt) eq "HASH"){
-      $_[0]->{class}="cmdb_ci_server";
+      $_[0]->{class}="cmdb_ci_hardware";
    }
 
    return($self->SUPER::SetFilter(@_));

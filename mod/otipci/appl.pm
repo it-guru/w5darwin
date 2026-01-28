@@ -1,4 +1,4 @@
-package otipci::system;
+package otipci::appl;
 #  W5Base Framework
 #  Copyright (C) 2026  Hartmut Vogler (it@guru.de)
 #
@@ -65,10 +65,11 @@ sub new
             label         =>'Short-Description',
             dataobjattr   =>'_source.short_description'),
 
+
       new kernel::Field::Text(     
-            name          =>'systemid',
+            name          =>'applid',
             dataobjattr   =>'_source.u_external_id',
-            label         =>'SystemID'),
+            label         =>'ApplicationID'),
 
       new kernel::Field::Text(     
             name          =>'statusid',
@@ -106,65 +107,10 @@ sub new
             label         =>'ServiceNow sys_id'),
 
 
-
-      new kernel::Field::Float(
-            name          =>'systemcorecount',
-            label         =>'System core count (new!)',
-            unit          =>'CPU',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_core_count'),
-
-      new kernel::Field::Float(
-            name          =>'systemcpucount',
-            label         =>'System CPU count',
-            unit          =>'CPU',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_count'),
-
-      new kernel::Field::Float(
-            name          =>'systemcpuspeed',
-            label         =>'System CPU speed',
-            unit          =>'MHz',
-            precision     =>0,
-            dataobjattr   =>'_source.cpu_speed'),
-
-      new kernel::Field::Text(
-            name          =>'systemcputype',
-            htmldetail    =>'NotEmpty',
-            label         =>'System CPU type',
-            dataobjattr   =>'_source.cpu_type'),
-
-      new kernel::Field::Float(
-            name          =>'systemmemory',
-            label         =>'System Memory',
-            unit          =>'MB',
-            precision     =>0,
-            dataobjattr   =>'_source.ram'),
-
-
-      new kernel::Field::Text(
-            name          =>'systemos',
-            label         =>'System OS',
-            dataobjattr   =>'_source.os.name'),
-
-
-
-
-
-      new kernel::Field::Text(
-            name          =>'model',
-            label         =>'Model',
-            dataobjattr   =>'_source.model_id.name'),
-
       new kernel::Field::Text(
             name          =>'category',
             label         =>'Category',
             dataobjattr   =>'_source.category'),
-
-      new kernel::Field::Text(
-            name          =>'classification',
-            label         =>'Classification',
-            dataobjattr   =>'_source.classification.name'),
 
       new kernel::Field::Text(
             name          =>'usage',
@@ -177,21 +123,21 @@ sub new
             dataobjattr   =>'_source.environment.name'),
 
 
-      new kernel::Field::Text(
-            name          =>'altname',
-            label         =>'second name',
-            dataobjattr   =>'_source.u_customer_ci_name'),
-
-
-      new kernel::Field::SubList(
-            name          =>'ipaddresses',
-            label         =>'IP-Adresses',
-            searchable    =>0,
-            group         =>'ipaddresses',
-            vjointo       =>'otipci::netadapt',
-            vjoinon       =>['sys_id'=>'psys_id'],
-            vjoindisp     =>[qw(ipaddress status shortdesc)]),
-
+#      new kernel::Field::Text(
+#            name          =>'altname',
+#            label         =>'second name',
+#            dataobjattr   =>'_source.u_customer_ci_name'),
+#
+#
+#      new kernel::Field::SubList(
+#            name          =>'ipaddresses',
+#            label         =>'IP-Adresses',
+#            searchable    =>0,
+#            group         =>'ipaddresses',
+#            vjointo       =>'otipci::netadapt',
+#            vjoinon       =>['sys_id'=>'psys_id'],
+#            vjoindisp     =>[qw(ipaddress status shortdesc)]),
+#
       new kernel::Field::Text(     
             name          =>'category',
             searchable    =>0,
@@ -203,8 +149,6 @@ sub new
             name          =>'subcategory',
             dataobjattr   =>'_source.subcategory',
             label         =>'Sub-Category'),
-
-
 
 
       new kernel::Field::Text(     
@@ -238,7 +182,8 @@ sub new
             htmldetail    =>'NotEmpty',
             label         =>'Source-Load'),
 
-      new kernel::Field::Date(
+
+      new kernel::Field::Date(     
             name          =>'dtLastLoad',
             dataobjattr   =>'_source.dtLastLoad',
             searchable    =>0,
@@ -261,16 +206,7 @@ sub new
 
    );
 
-# "otip_version": "2025-12-01T06:05:44.0Z",
-#    "sys_id": "7a95c2f36bbcf0d047df9974ab63fb81",
-#    "otip_id": "7a95c2f36bbcf0d047df9974ab63fb81",
-#    "otip_deleted": true,
-#    "class": "cmdb_ci_server",
-#    "u_mandator_key": "A000A53E.000000"
-
-
-   $self->setDefaultView(qw(id systemid name status model category 
-                            classification usage));
+   $self->setDefaultView(qw(id applid name status model category usage));
    $self->LimitBackend(10000);
    return($self);
 }
@@ -299,7 +235,7 @@ sub SetFilter
    my $flt=$_[0];
 
    if (ref($flt) eq "HASH"){
-      $_[0]->{class}="cmdb_ci_server";
+      $_[0]->{class}="cmdb_ci_appl";
    }
 
    return($self->SUPER::SetFilter(@_));

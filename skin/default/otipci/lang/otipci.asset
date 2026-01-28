@@ -1,0 +1,9 @@
+'otipci::asset'=>{
+  de=>'OTIP_CI: Asset Hardware',
+  en=>'OTIP_CI: Asset Hardware',
+},
+'fieldgroup.systems'=>{
+  de=>'Systeme',
+  en=>'Systems',
+}
+
