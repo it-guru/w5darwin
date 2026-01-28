@@ -295,6 +295,11 @@ sub DataCollector
                   $_->{active}=0;
                }
             }
+            if ($_->{name}=~m/\*/){
+               $_->{active}=0;
+               $_->{description}.="\nW5Base set inactive due invalid char";
+            }
+#            $_->{manager}=UTF8toLatin1($_->{manager});  # funktioniert nicht
             if (exists($_->{type}) && $_->{type} ne ""){
                $_->{type}=[split(/\s*,\s*/,$_->{type})];
             }
@@ -304,7 +309,11 @@ sub DataCollector
                }
             }
          } @$data);
-         #print STDERR Dumper($data);
+         @$data=grep({ 
+            my $ok=1;
+            $ok;
+         } @$data);
+         print STDERR Dumper($data);
          return($data);
       }
    );

@@ -670,7 +670,6 @@ sub handleSRec
          elsif (defined($agrprec)){
             $newrec->{fullname}=uc(exttrim($agrprec->{fullname}));
          }
-         $newrec->{fullname}=~s/\.$//;
          $newrec->{srcsys}=$firstseenon;
       }
       # consistence Checks
