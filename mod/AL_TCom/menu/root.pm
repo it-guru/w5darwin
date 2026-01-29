@@ -110,6 +110,7 @@ sub Init
 
    $self->RegisterObj("AL_TCom.appl.nor",
                       "TS::applnor",
+                      func=>'MainWithNew',
                       defaultacl=>['valid_user']);
 
    $self->RegisterObj("AL_TCom.appl",
