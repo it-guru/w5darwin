@@ -154,8 +154,31 @@ sub qcheckRecord
          };
          $awssyscount++;
       }
-      my $sys=getModuleObject($self->getParent->Config(),"itil::system");
 
+
+
+      my $sys=getModuleObject($self->getParent->Config(),"itil::system");
+      #######################################################################
+      # pre set fast inactivitiy check
+      $sys->ResetFilter();
+      $sys->SetFilter([
+         {
+            itcloudareaid=>\$rec->{id},
+            cistatusid=>"<6"
+         }]
+      );
+      my @cursys=$sys->getHashList(qw(ALL));
+      foreach my $sysrec (@cursys){
+         if (!exists($srcid{$sysrec->{srcid}})){
+            msg(INFO,"fast set inactive for $sysrec->{id} ".
+                     "srcid=$sysrec->{srcid} recomented");
+         }
+      }
+
+      #######################################################################
+
+
+      $sys->ResetFilter();
       $sys->SetFilter([
          {
             srcid=>[keys(%srcid)]
@@ -220,7 +243,7 @@ sub qcheckRecord
          }
       }
 
-      #printf STDERR ("AWS:delsys=%s\n",Dumper(\@delsys));
+      printf STDERR ("AWS:delsys=%s\n",Dumper(\@delsys));
       if (keys(%srcid) &&   # ensure, restcall get at least one result
           $#delsys!=-1){
          $sys->ResetFilter();
