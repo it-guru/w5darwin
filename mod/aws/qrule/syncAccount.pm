@@ -243,7 +243,7 @@ sub qcheckRecord
          }
       }
 
-      printf STDERR ("AWS:delsys=%s\n",Dumper(\@delsys));
+      #printf STDERR ("AWS:delsys=%s\n",Dumper(\@delsys));
       if (keys(%srcid) &&   # ensure, restcall get at least one result
           $#delsys!=-1){
          $sys->ResetFilter();
