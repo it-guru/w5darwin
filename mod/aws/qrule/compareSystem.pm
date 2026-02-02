@@ -227,8 +227,8 @@ sub qcheckRecord
                ipaddresses=>\@ipaddresses,
             );
             msg(INFO,"SSMagentOSrelease:".$parrec->{SSMagentOSrelease});
-            if ($parrec->{SSMagentOSrelease} ne ""){
-               $syncData{osrelease}=$parrec->{SSMagentOSrelease};
+            if (trim($parrec->{SSMagentOSrelease}) ne ""){
+               $syncData{osrelease}=trim($parrec->{SSMagentOSrelease});
                push(@qmsg,"found SSMagent osrelease: ".
                           $parrec->{SSMagentOSrelease});
             }
