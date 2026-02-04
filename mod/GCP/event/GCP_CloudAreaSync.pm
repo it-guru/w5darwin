@@ -248,19 +248,24 @@ sub GCP_CloudAreaSync
                my ($arec,$msg)=$appl->getOnlyFirst(qw(id cistatusid name));
                if (!defined($arec)){
                   $opList[$c]->{OP}="invalid";
-                  push(@msg,"ERROR: invalid application (W5BaseID) in ".
-                            "project '".
-                             $opList[$c]->{DATA}->{name}."' (".
-                             $opList[$c]->{DATA}->{srcid}.
-                             ")");
+                  my $name=$opList[$c]->{DATA}->{name};
+                  if ($name eq ""){
+                     $name=$opList[$c]->{DATA}->{srcid};
+                  }
+                  my $applid=$opList[$c]->{DATA}->{applid};
+                  push(@msg,"ERROR: invalid application (W5BaseID:$applid) in ".
+                            "project \"".$name."\"");
                }
                else{
                   if ($arec->{cistatusid} ne "3" &&
                       $arec->{cistatusid} ne "4"){
                      $opList[$c]->{OP}="invalid";
+                     my $name=$opList[$c]->{DATA}->{name};
+                     if ($name eq ""){
+                        $name=$opList[$c]->{DATA}->{srcid};
+                     }
                      push(@msg,"ERROR: invalid cistatus for application ".
-                               $arec->{name}.
-                               " in project ".$opList[$c]->{DATA}->{name});
+                               "\"".$arec->{name}."\" in project \"$name\"");
                   }
                }
             }
