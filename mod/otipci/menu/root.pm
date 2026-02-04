@@ -48,7 +48,7 @@ sub Init
                       prio=>20100,
                       defaultacl=>['valid_user']);
 
-   $self->RegisterObj("itu.cfm.otipci.netadapt",
+   $self->RegisterObj("itu.cfm.otipci.system.netadapt",
                       "otipci::netadapt",
                       prio=>20300,
                       defaultacl=>['valid_user']);
