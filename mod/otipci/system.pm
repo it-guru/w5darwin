@@ -84,7 +84,7 @@ sub new
       new kernel::Field::Text(     
             name          =>'opstatus',
             dataobjattr   =>'_source.operational_status.name',
-            label         =>'Operational-Status'),
+            label         =>'OP-Status'),
 
 
       new kernel::Field::TextDrop(
@@ -269,7 +269,7 @@ sub new
 #    "u_mandator_key": "A000A53E.000000"
 
 
-   $self->setDefaultView(qw(id systemid name status model category 
+   $self->setDefaultView(qw(id systemid name altname status opstatus category 
                             classification usage));
    $self->LimitBackend(10000);
    return($self);
@@ -311,6 +311,9 @@ sub initSearchQuery
    my $self=shift;
    if (!defined(Query->Param("search_status"))){
      Query->Param("search_status"=>"\"Installed\"");
+   }
+   if (!defined(Query->Param("search_opstatus"))){
+     Query->Param("search_opstatus"=>"\"Operational\"");
    }
 }
 
