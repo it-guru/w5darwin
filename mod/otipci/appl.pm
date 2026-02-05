@@ -72,6 +72,19 @@ sub new
             label         =>'ApplicationID'),
 
       new kernel::Field::Text(     
+            name          =>'companyid',
+            dataobjattr   =>'_source.company.id',
+            htmldetail    =>'0',
+            searchable    =>'0',
+            label         =>'CompanyID'),
+
+      new kernel::Field::Text(     
+            name          =>'company',
+            dataobjattr   =>'_source.company.name',
+            searchable    =>'0',
+            label         =>'Company'),
+
+      new kernel::Field::Text(     
             name          =>'statusid',
             dataobjattr   =>'_source.install_status.id',
             htmldetail    =>'0',

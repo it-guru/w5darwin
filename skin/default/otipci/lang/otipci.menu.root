@@ -2,3 +2,19 @@
   de=>'OTIP-CI',
   en=>'OTIP-CI'
 },
+'itu.cfm.otipci.appl'=>{
+  de=>'Anwendung',
+  en=>'Application'
+},
+'itu.cfm.otipci.system'=>{
+  de=>'System',
+  en=>'System'
+},
+'itu.cfm.otipci.asset'=>{
+  de=>'Hardware',
+  en=>'Hardware'
+},
+'itu.cfm.otipci.kernel'=>{
+  de=>'Kern',
+  en=>'Kernel'
+},
