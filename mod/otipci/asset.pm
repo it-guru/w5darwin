@@ -57,7 +57,7 @@ sub new
       new kernel::Field::Text(     
             name          =>'name',
             dataobjattr   =>'_source.u_real_name',
-            label         =>'name'),
+            label         =>'Name'),
 
       new kernel::Field::Text(
             name          =>'shortdesc',
@@ -69,6 +69,34 @@ sub new
             name          =>'systemid',
             dataobjattr   =>'_source.u_external_id',
             label         =>'SystemID'),
+
+      new kernel::Field::Text(
+            name          =>'companyid',
+            dataobjattr   =>'_source.company.id',
+            htmldetail    =>'0',
+            searchable    =>'0',
+            label         =>'CompanyID'),
+
+      new kernel::Field::Text(
+            name          =>'company',
+            dataobjattr   =>'_source.company.name',
+            searchable    =>'0',
+            label         =>'Company'),
+
+      new kernel::Field::Text(
+            name          =>'locationid',
+            dataobjattr   =>'_source.location.id',
+            htmldetail    =>'0',
+            searchable    =>'0',
+            label         =>'LocationID'),
+
+      new kernel::Field::Text(
+            name          =>'location',
+            dataobjattr   =>'_source.location.name',
+            searchable    =>'0',
+            label         =>'Location'),
+
+
 
       new kernel::Field::Text(     
             name          =>'statusid',
@@ -111,6 +139,19 @@ sub new
             name          =>'serialno',
             label         =>'Asset Serialnumber',
             dataobjattr   =>'_source.serial_number'),
+
+      new kernel::Field::Text(
+            name          =>'manufacturerid',
+            label         =>'ManufacturerID',
+            htmldetail    =>'0',
+            searchable    =>'0',
+            dataobjattr   =>'_source.manufacturer.id'),
+
+      new kernel::Field::Text(
+            name          =>'manufacturer',
+            label         =>'Manufacturer',
+            searchable    =>'0',
+            dataobjattr   =>'_source.manufacturer.name'),
 
       new kernel::Field::Text(
             name          =>'model',

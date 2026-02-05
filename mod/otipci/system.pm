@@ -57,7 +57,7 @@ sub new
       new kernel::Field::Text(     
             name          =>'name',
             dataobjattr   =>'_source.u_real_name',
-            label         =>'name'),
+            label         =>'Name'),
 
       new kernel::Field::Text(
             name          =>'shortdesc',
@@ -69,6 +69,32 @@ sub new
             name          =>'systemid',
             dataobjattr   =>'_source.u_external_id',
             label         =>'SystemID'),
+
+      new kernel::Field::Text(
+            name          =>'companyid',
+            dataobjattr   =>'_source.company.id',
+            htmldetail    =>'0',
+            searchable    =>'0',
+            label         =>'CompanyID'),
+
+      new kernel::Field::Text(
+            name          =>'company',
+            dataobjattr   =>'_source.company.name',
+            searchable    =>'0',
+            label         =>'Company'),
+
+      new kernel::Field::Text(
+            name          =>'locationid',
+            dataobjattr   =>'_source.location.id',
+            htmldetail    =>'0',
+            searchable    =>'0',
+            label         =>'LocationID'),
+
+      new kernel::Field::Text(
+            name          =>'location',
+            dataobjattr   =>'_source.location.name',
+            searchable    =>'0',
+            label         =>'Location'),
 
       new kernel::Field::Text(     
             name          =>'statusid',
@@ -146,6 +172,9 @@ sub new
             name          =>'systemos',
             label         =>'System OS',
             dataobjattr   =>'_source.os.name'),
+
+
+
 
 
 
