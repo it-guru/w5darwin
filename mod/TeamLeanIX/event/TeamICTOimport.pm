@@ -150,7 +150,8 @@ sub TeamICTOimport
          $cistatusid="6";
       }
       if (!defined($cistatusid)){
-         msg(WARN,sprintf("skip irec: %s\n",Dumper($irec)));
+         msg(WARN,"skip irec: ictoNumber='$irec->{ictoNumber}' ".
+                             "status='$irec->{status}' id='$agrpid'");
          next;
       }
 
