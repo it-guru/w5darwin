@@ -149,6 +149,9 @@ sub TeamICTOimport
       if ($irec->{status} eq "Retired"){
          $cistatusid="6";
       }
+      if ($irec->{status} eq "Invalid"){
+         $cistatusid="6";
+      }
       if (!defined($cistatusid)){
          msg(WARN,"skip irec: ictoNumber='$irec->{ictoNumber}' ".
                              "status='$irec->{status}' id='$agrpid'");
