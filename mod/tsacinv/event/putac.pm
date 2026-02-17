@@ -292,7 +292,10 @@ sub mkAcFtpRecSystem
       $acrec->{LogSys}->{SC_Location_ID}="DWR0.0000.0000";
    }
    elsif ($rec->{mandator}=~m/^TelekomIT.*/){
-      $acrec->{LogSys}->{SC_Location_ID}="4787.0000.0000";
+      # $acrec->{LogSys}->{SC_Location_ID}="4787.0000.0000";
+
+      # DEUTSCHE TELEKOM IT GmbH (8111)
+      $acrec->{LogSys}->{SC_Location_ID}="A53E.0000.0000"; 
    }
    elsif ($rec->{mandator}=~m/^T-Systems.*/){
       $acrec->{LogSys}->{SC_Location_ID}="B065.0091.0023";
@@ -792,7 +795,7 @@ sub SendXmlToAM_instance
                      Remarks=>$irec->{comments},
                      Assignment=>$assignment,
                      IncidentAG=>$iassignment,
-                     SC_Location_Id=>'4787.0000.0000',
+                     SC_Location_Id=>'A53E.0000.0000',
                      #CostCenter=>$rec->{conumber},
                      Security_Unit=>"TS.DE",
                      CustomerLink=>"TS.DE",
@@ -800,7 +803,7 @@ sub SendXmlToAM_instance
                   }
                };
                if ($irec->{databossid} eq "12072167880012"){
-                  $swi->{Instances}->{SC_Location_Id}="4787.0000.0000";
+                  $swi->{Instances}->{SC_Location_Id}="A53E.0000.0000";
                }
 
                my $fh=$fh{instance};
@@ -944,7 +947,7 @@ sub SendXmlToAM_itclust
             };
             $acftprec->{Clusters}->{ExternalID}=$rec->{id};
             $acftprec->{Clusters}->{ExternalSystem}="W5Base";
-            $acftprec->{Clusters}->{SC_Location}="4787.0000.0000";
+            $acftprec->{Clusters}->{SC_Location}="A53E.0000.0000";
             $acftprec->{Clusters}->{AC_Location}="LGER029687";
 
             my $fh=$fh{itclust};
