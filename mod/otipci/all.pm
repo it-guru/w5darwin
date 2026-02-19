@@ -240,6 +240,11 @@ sub ORIGIN_Load
                return(undef);
             }
             else{
+               if (ref($session->{RawDump}) ne "ARRAY"){
+                  msg(ERROR,"unexpected RawDump from configItem call result:".
+                            Dumper($session->{RawDump}));
+                  return("ERROR");
+               }
                my $lastRec=$session->{RawDump}->[$recCount];
                #print STDERR "lastRec=".Dumper($lastRec);
                $idgt=$lastRec->{otip_id};
