@@ -191,9 +191,12 @@ sub ORIGIN_Load
             }
             else{
                if (ref($session->{RawDump}) ne "ARRAY"){
-                  msg(ERROR,"unexpected RawDump from relation call result:".
-                            Dumper($session->{RawDump}));
-                  return("ERROR");
+                  my $RawDump=Dumper($session->{RawDump});
+                  $RawDump=~s/^\s*\$VAR1\s*=//g;
+                  $RawDump=~s/[\n\s]+/ /g;
+                  return("ERROR","unexpected RawDump from previous(".
+                                 ($session->{loopCount}-1).
+                                 ") /relation call result: $RawDump");
                }
                my $lastRec=$session->{RawDump}->[$recCount];
                #print STDERR "lastRec=".Dumper($lastRec);

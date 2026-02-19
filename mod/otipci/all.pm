@@ -241,9 +241,12 @@ sub ORIGIN_Load
             }
             else{
                if (ref($session->{RawDump}) ne "ARRAY"){
-                  msg(ERROR,"unexpected RawDump from configItem call result:".
-                            Dumper($session->{RawDump}));
-                  return("ERROR");
+                  my $RawDump=Dumper($session->{RawDump});
+                  $RawDump=~s/^\s*\$VAR1\s*=//g;
+                  $RawDump=~s/[\n\s]+/ /g;
+                  return("ERROR","unexpected RawDump from previous(".
+                                 ($session->{loopCount}-1).
+                                 ") /configItem call result: $RawDump");
                }
                my $lastRec=$session->{RawDump}->[$recCount];
                #print STDERR "lastRec=".Dumper($lastRec);
@@ -270,7 +273,7 @@ sub ORIGIN_Load
    if (ref($res) ne "HASH"){
       msg(ERROR,"something went wrong '$res' in ".$self->Self());
    }
-   #msg(INFO,"ESrestETLload result=".Dumper($res));
+   msg(INFO,"ESrestETLload result=".Dumper($res));
    return($res,$emsg);
 }
 

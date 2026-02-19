@@ -82,7 +82,10 @@ sub otipci_OriginLoad
          my $exitmsg=msg(ERROR,"unamble to call ORIGIN_Load on $objname");
          return({exitcode=>1,exitmsg=>$exitmsg});
       }
-      $o->ORIGIN_Load(\%loadParam);
+      my ($res,$emsg)=$o->ORIGIN_Load(\%loadParam);
+      if (ref($res) ne "HASH"){
+         return({exitcode=>1,exitmsg=>$emsg});
+      }
    }
 
 
