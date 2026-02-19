@@ -52,6 +52,7 @@ sub ORIGIN_Load_BackCall
    if (exists($meta->{dtLastLoad})){
       $dtLastLoad=$self->ExpandTimeExpression($meta->{dtLastLoad},
                                               "en","GMT","GMT");
+      msg(INFO,"dtLastLoad from meta=$dtLastLoad");
    }
    if ($dtLastLoad ne ""){
       my $fullLoadAfter=10080; # do a full load, if last
@@ -80,12 +81,14 @@ sub ORIGIN_Load_BackCall
          $dtLastLoad=undef;
       }
    }
+   msg(INFO,"dtLastLoad after fullLoadAfter handling=$dtLastLoad");
    if (exists($session->{loadParam}->{full}) &&
        $session->{loadParam}->{full}==1 &&
        $session->{loopCount}==0){
       msg(WARN,"inititiate full load by loadParam");
       $dtLastLoad=undef;
    }
+   msg(INFO,"dtLastLoad after Param and loopCount handling=$dtLastLoad");
  
    if (($baseurl=~m#/$#)){
       $baseurl=~s#/$##; 
