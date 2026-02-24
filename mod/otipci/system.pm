@@ -253,6 +253,7 @@ sub new
       new kernel::Field::MDate(
             name          =>'mdate',
             group         =>'source',
+            RestSoftFilter=>0,            # handle only direct ES query
             label         =>'Modification-Date',
             dataobjattr   =>'_source.sys_updated_on'),
 
@@ -354,7 +355,7 @@ sub ESprepairRawRecord
    my $self=shift;
    my $rec=shift;
 
-   print STDERR Dumper($rec);
+  # print STDERR Dumper($rec);
 
 }
 
