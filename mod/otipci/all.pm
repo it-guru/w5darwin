@@ -125,7 +125,7 @@ sub ORIGIN_Load
         },
         mappings=>{
            _meta=>{
-              version=>20
+              version=>21
            },
            properties=>{
               name    =>{type=>'text',
@@ -157,6 +157,12 @@ sub ORIGIN_Load
                              }
                            }
                          },
+              sys_updated_on=>{
+                            type=>"date"
+                         },
+              otip_version=>{
+                            type=>"date"
+                         },
               fullname=>{type=>'text',
                          fields=> {
                              keyword=> {
@@ -182,7 +188,7 @@ sub ORIGIN_Load
             "| ( .dt + \"T\" + .tm + \"Z\" | fromdateiso8601 )".
             "- ( ( .off | ltrimstr(\"+\") | tonumber ) * 3600 ".
             "+ ( .min | tonumber ) * 60 ) ".
-            "| strftime(\"\%Y-\%m-\%d \%H:\%M:\%S\"); ".
+            "| strftime(\"\%Y-\%m-\%dT\%H:\%M:\%S.0Z\"); ".
             "".
             "def to_utc_safe: ".
             "if (type==\"string\") then to_utc else . end; ".
