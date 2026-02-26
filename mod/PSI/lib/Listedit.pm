@@ -45,11 +45,6 @@ sub ORIGIN_Load_BackCall
    
    my ($baseurl,$apikey,$apiuser)=$self->GetRESTCredentials($credentialName);
 
-
-printf STDERR ("fifi $baseurl,$apikey,$apiuser \n");
-
-
-   
    my $dtLastLoad;
    if (exists($meta->{dtLastLoad})){
       $dtLastLoad=$self->ExpandTimeExpression($meta->{dtLastLoad},
