@@ -66,7 +66,7 @@ sub new
                 name          =>'responsible',
                 group         =>'contacts',
                 label         =>'costcenter responsible EMail',
-                vjointo       =>'tsciam::user',
+                vjointo       =>'caiman::user',
                 vjoinon       =>['responsiblewiw'=>'wiwid'],
                 vjoindisp     =>'email'),
 
