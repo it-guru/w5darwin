@@ -88,7 +88,7 @@ sub new
                 name          =>'databoss',
                 group         =>'contacts',
                 label         =>'Projectmanager EMail',
-                vjointo       =>'tsciam::user',
+                vjointo       =>'caiman::user',
                 vjoinon       =>['databosswiw'=>'wiwid'],
                 vjoindisp     =>'email'),
 
