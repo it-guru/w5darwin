@@ -58,17 +58,9 @@ sub Init
                       "W5Warehouse::Systemhardening",
                       defaultacl=>['admin']);
 
-   $self->RegisterObj("itu.W5Warehouse.Rep.IT_SeM",
-                      "tmpl/welcome",
-                      defaultacl=>['valid_user']);
-
    $self->RegisterObj("itu.W5Warehouse.Rep.ApplFarm",
                       "W5Warehouse::appl_itfarm",
                       defaultacl=>['admin']);
-
-   $self->RegisterObj("itu.W5Warehouse.Rep.IT_SeM.System",
-                      "W5Warehouse::itsem_sys",
-                      defaultacl=>['valid_user']);
 
    $self->RegisterObj("itu.W5Warehouse.Rep.UserGroupRelation",
                       "W5Warehouse::UserGroupRelation",
