@@ -452,14 +452,20 @@ sub resolvUserID
    my $rec=$self->SUPER::resolvUserID($uid);
    if (!defined($rec) && (!$uid=~m/(\s|^\s*$)/)){
       my $ciam=getModuleObject($self->Config,"tsciam::user");
-      $ciam->SetFilter({wiwid=>\$uid});
-      my ($ciamrec,$msg)=$ciam->getOnlyFirst(qw(office_zipcode office_location 
-                                              office_street));
-      if (defined($ciamrec)){
-         return($ciamrec);
+      if (defined($ciam)){
+         $ciam->SetFilter({wiwid=>\$uid});
+         my ($ciamrec,$msg)=$ciam->getOnlyFirst(qw(office_zipcode 
+                                                   office_location 
+                                                   office_street));
+         if (defined($ciamrec)){
+            return($ciamrec);
+         }
+         else{
+            return({office_location=>'invalid CIAM entry for wiwid '.$uid});
+         }
       }
       else{
-         return({office_location=>'invalid CIAM entry for wiwid '.$uid});
+         return({office_location=>'CIAM not available '.$uid});
       }
    }
    return($rec);
