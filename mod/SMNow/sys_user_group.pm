@@ -299,6 +299,10 @@ sub DataCollector
                $_->{active}=0;
                $_->{description}.="\nW5Base set inactive due invalid char";
             }
+            if ($_->{name}=~m/ /){
+               $_->{active}=0;
+               $_->{description}.="\nW5Base set inactive space char";
+            }
             if (exists($_->{type}) && $_->{type} ne ""){
                $_->{type}=[split(/\s*,\s*/,$_->{type})];
             }
