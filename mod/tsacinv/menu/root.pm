@@ -75,10 +75,6 @@ sub Init
                       "tsacinv::noappsystem",
                       defaultacl=>['valid_user']);
    
-   $self->RegisterObj("itu.ac.system.service",
-                      "tsacinv::service",
-                      defaultacl=>['valid_user']);
-   
    $self->RegisterObj("itu.ac.itclust",
                       "tsacinv::itclust",
                       defaultacl=>['admin']);
@@ -143,10 +139,6 @@ sub Init
                       "tsacinv::lnkw5bosrelease",
                       func=>'MainWithNew',
                       defaultacl=>['admin']);
-   
-   $self->RegisterObj("itu.ac.krn.service",
-                      "tsacinv::service",
-                      defaultacl=>['valid_user']);
    
    $self->RegisterObj("itu.ac.krn.location",
                       "tsacinv::location",

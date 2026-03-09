@@ -532,6 +532,7 @@ sub new
                 name          =>'orderedservices',
                 label         =>'ordered Services',
                 group         =>'orderedservices',
+                uivisible     =>0,
                 vjointo       =>'tsacinv::service',
                 vjoinbase     =>[{'isdelivered'=>\'0'}],
                 forwardSearch =>1,
@@ -545,6 +546,7 @@ sub new
                 label         =>'delivered Services',
                 group         =>'services',
                 forwardSearch =>1,
+                uivisible     =>0,
                 vjointo       =>'tsacinv::service',
                 vjoinbase     =>[{'isdelivered'=>\'1'}],
                 vjoinon       =>['lcomputerid'=>'lcomputerid'],
@@ -638,6 +640,7 @@ sub new
       new kernel::Field::Dynamic(
                 name          =>'dynservices',
                 searchable    =>0,
+                uivisible     =>0,
                 depend        =>[qw(systemid)],
                 group         =>'services',
                 label         =>'Services Columns',
@@ -646,6 +649,7 @@ sub new
       new kernel::Field::Dynamic(
                 name          =>'dynorderedservices',
                 searchable    =>0,
+                uivisible     =>0,
                 depend        =>[qw(systemid)],
                 group         =>'orderedservices',
                 label         =>'ordered Services Columns',
