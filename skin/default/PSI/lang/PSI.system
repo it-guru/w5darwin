@@ -1,4 +1,8 @@
 'PSI::system'=>{
  de=>'PSI Portal: system',
  en=>'PSI Portal: system',
+},
+'fieldgroup.functionalUnitDataControllers'=>{
+   en=>'functionalUnitDataControllers',
+   de=>'functionalUnitDataControllers',
 }
