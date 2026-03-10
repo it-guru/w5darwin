@@ -79,6 +79,7 @@ sub new
             name          =>'startDate',
             dataobjattr   =>'_source.operationStatus.startDate',
             htmldetail    =>'NotEmpty',
+            dayonly       =>1,
             searchable    =>0,
             label         =>'startDate'),
 
@@ -87,6 +88,7 @@ sub new
             dataobjattr   =>'_source.operationStatus.endDate',
             htmldetail    =>'NotEmpty',
             searchable    =>0,
+            dayonly       =>1,
             label         =>'endDate'),
 
       new kernel::Field::Date(     
@@ -103,15 +105,31 @@ sub new
             searchable    =>0,
             label         =>'ownerOrganizationTsisOrgUnitId'),
 
-      new kernel::Field::Email(     
-            name          =>'technicalSystemOwnerEmail',
-            dataobjattr   =>'_source.technicalSystemOwner.email',
+      new kernel::Field::TextDrop(     
+            name          =>'technicalSystemOwner',
+            searchable    =>0,
+            vjointo       =>'caiman::user',
+            vjoinon       =>['technicalSystemOwnerEmail'=>'email'],
+            vjoindisp     =>'fullname',
             label         =>'technicalSystemOwner'),
 
       new kernel::Field::Email(     
+            name          =>'technicalSystemOwnerEmail',
+            dataobjattr   =>'_source.technicalSystemOwner.email',
+            label         =>'technicalSystemOwner EMail'),
+
+      new kernel::Field::TextDrop(     
             name          =>'functionalSystemOwner',
-            dataobjattr   =>'_source.functionalSystemOwner.email',
+            searchable    =>0,
+            vjointo       =>'caiman::user',
+            vjoinon       =>['functionalSystemOwnerEmail'=>'email'],
+            vjoindisp     =>'fullname',
             label         =>'functionalSystemOwner'),
+
+      new kernel::Field::Email(     
+            name          =>'functionalSystemOwnerEmail',
+            dataobjattr   =>'_source.functionalSystemOwner.email',
+            label         =>'functionalSystemOwner EMail'),
 
       new kernel::Field::Textarea(     
             name          =>'businessProcess',
@@ -119,19 +137,22 @@ sub new
             searchable    =>0,
             label         =>'businessProcess'),
 
+      new kernel::Field::SubList(
+            name          =>'functionalUnitDataControllers',
+            label         =>'functionalUnitDataControllers',
+            searchable    =>0,
+            htmldetail    =>'NotEmpty',
+            group         =>'functionalUnitDataControllers',
+            vjointo       =>'PSI::functionalUnitDataController',
+            vjoinon       =>['id'=>'id'],
+            vjoindisp     =>['email','lastName','firstName']),
+
       new kernel::Field::Date(     
             name          =>'dtLastLoad',
             dataobjattr   =>'_source.dtLastLoad',
             group         =>'source',
             searchable    =>0,
             label         =>'dtLastLoad'),
-
-#      new kernel::Field::Text(
-#            name          =>'srcid',
-#            group         =>'source',
-#            label         =>'Source-Id',
-#            dataobjattr   =>'_source.uuid'),
-
    );
    $self->setDefaultView(qw(id fullname status ));
    $self->LimitBackend(10000);
@@ -268,8 +289,18 @@ sub ESprepairRawRecord
    my $self=shift;
    my $rec=shift;
 
+   if (exists($rec->{'_source.operationStatus.startDate'}) &&
+       ($rec->{'_source.operationStatus.startDate'}
+        =~m/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)){
+      $rec->{'_source.operationStatus.startDate'}.="T12:00:00";
+   }
+   if (exists($rec->{'_source.operationStatus.endDate'}) &&
+       ($rec->{'_source.operationStatus.endDate'}
+        =~m/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)){
+      $rec->{'_source.operationStatus.startDate'}.="T12:00:00";
+   }
 
- #  print STDERR Dumper($rec);
+#   print STDERR Dumper($rec);
 
 }
 
@@ -282,7 +313,7 @@ sub getDetailBlockPriority
    my $self=shift;
    my $grp=shift;
    my %param=@_;
-   return(qw(header default orgs apps contacts  source));
+   return(qw(header default functionalUnitDataControllers  source));
 }
 
 
