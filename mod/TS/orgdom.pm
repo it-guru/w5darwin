@@ -88,6 +88,12 @@ sub new
                 dataobjattr   =>'orgdom.cistatus'),
 
       new kernel::Field::Text(
+                name          =>'sdcid',
+                label         =>'ValueStream ID',
+                htmleditwidth =>'100px',
+                dataobjattr   =>'orgdom.sdcid'),
+
+      new kernel::Field::Text(
                 name          =>'fullname',
                 label         =>'Fullname',
                 htmldetail    =>0,
