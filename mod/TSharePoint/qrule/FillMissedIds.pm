@@ -194,6 +194,16 @@ sub qcheckRecord
                           mode=>'string');
          }
       }
+      if ($rec->{hubid} ne ""){  # we have a unique link by HUB-ID
+            $self->IfComp($dataobj,
+                          $rec,"sdcid",
+                          $parrec,"sdcid",
+                          $autocorrect,$forcedupd,$wfrequest,
+                          \@qmsg,\@dataissue,\$errorlevel,
+                          mode=>'string');
+
+
+      }
    }
 
    my @result=$self->HandleQRuleResults("TSharePoint-HUB-Master",

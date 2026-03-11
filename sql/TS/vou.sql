@@ -162,3 +162,5 @@ create table lnkorgdom (
 ) ENGINE=INNODB;
 alter table vou add lorgchangedt datetime default NULL,add lrecertreqdt datetime default NULL,add lrecertdt datetime default NULL,add lrecertuser bigint(20) default NULL,add lrecertreqnotify datetime default NULL;
 alter table vou add hubid varchar(20) default NULL,add unique key (hubid);
+alter table vou add sdcid varchar(20) default NULL;
+alter table orgdom add sdcid varchar(20) default NULL;

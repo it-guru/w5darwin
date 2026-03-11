@@ -92,6 +92,12 @@ sub new
                 htmleditwidth =>'100px',
                 dataobjattr   =>'vou.hubid'),
 
+      new kernel::Field::Text(
+                name          =>'sdcid',
+                label         =>'ValueStream ID',
+                htmleditwidth =>'100px',
+                dataobjattr   =>'vou.sdcid'),
+
       new kernel::Field::Select(
                 name          =>'responsibleorg',
                 htmleditwidth =>'40%',
@@ -199,6 +205,8 @@ sub new
                 label         =>'Fullname',
                 htmldetail    =>0,
                 dataobjattr   =>"concat(".
+                                "if (vou.sdcid<>'',".
+                                "if (vou.sdcid REGEXP '^glob','GLOBAL: ','LOCAL: '),''),".
                                 "vou.shortname,".
                                 "if (vou.name<>'','-',''),".
                                 "vou.name".

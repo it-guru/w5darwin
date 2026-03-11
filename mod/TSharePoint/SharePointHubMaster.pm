@@ -80,7 +80,7 @@ sub new
             dataobjattr   =>'_source.SDC_ID',
             group         =>'domain',
             ignorecase    =>1,
-            label         =>'SDC-ID'),
+            label         =>'ValueStream-ID'),
 
       new kernel::Field::Text(
             name          =>'fullname',

@@ -83,7 +83,7 @@ sub HubMasterOrgDomainImport
 
 
    $orgdomo->SetFilter({cistatusid=>"4"});
-   $orgdomo->SetCurrentView(qw( id orgdomid name cistatusid ));
+   $orgdomo->SetCurrentView(qw( id orgdomid name sdcid cistatusid ));
    my $orgdom=$orgdomo->getHashIndexed(qw(orgdomid));
 
 
@@ -93,7 +93,7 @@ sub HubMasterOrgDomainImport
    my $iname=$i->Self();
 
    $i->SetFilter({});
-   my @hub=$i->getHashList(qw(hubid domainid domain));
+   my @hub=$i->getHashList(qw(hubid domainid sdcid domain));
 
    my $hubdom={};
    foreach my $irec (@hub){
@@ -118,7 +118,8 @@ sub HubMasterOrgDomainImport
          my $domrec={
             cistatusid=>'4',
             name=>$name,
-            orgdomid=>$irec->{domainid}
+            orgdomid=>$irec->{domainid},
+            sdcid=>$irec->{sdcid}
          };
          if (!defined($norgdom->{$irec->{domainid}})){
             $norgdom->{$irec->{domainid}}=$domrec;
@@ -133,7 +134,8 @@ sub HubMasterOrgDomainImport
                   $eq=0;
                   # eq=0 = Satz gefunden und es wird ein Update gemacht
                   if ($a->{cistatusid} eq $b->{cistatusid} &&
-                      $a->{name} eq $b->{name}){
+                      $a->{name} eq $b->{name} &&
+                      $a->{sdcid} eq $b->{sdcid}){
                      $eq=1;
                      # eq=1 = alles super - kein Update notwendig
                   }
@@ -150,7 +152,8 @@ sub HubMasterOrgDomainImport
                     DATA=>{
                        name      =>$newrec->{name},
                        cistatusid=>$newrec->{cistatusid},
-                       orgdomid  =>$newrec->{orgdomid}
+                       orgdomid  =>$newrec->{orgdomid},
+                       sdcid     =>$newrec->{sdcid}
                     }
                  };
                  if ($mode eq "update"){
