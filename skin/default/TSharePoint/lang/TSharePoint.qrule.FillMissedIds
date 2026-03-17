@@ -2,3 +2,12 @@
   de=>'Auffüllen fehlender IDs',
   en=>'Fillup missing IDs'
 },
+'desired already used by other VOU'=>{
+  de=>'geplante ID bereits durch andere VOU in Verwendung'
+},
+'unable to identify HUB at TSharePoint HubMaster list"'=>{
+  de=>'HUB kann in TSharePoint HubMaster-List nicht identifziert werden'
+},
+'identified HUB at TSharePoint HubMaster list is not AKTIV"'=>{
+  de=>'Identifizierter HUB in TSharePoint HubMaster-List ist nicht AKTIV'
+}
