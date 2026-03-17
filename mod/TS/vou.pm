@@ -95,6 +95,8 @@ sub new
       new kernel::Field::Text(
                 name          =>'sdcid',
                 label         =>'ValueStream ID',
+                group         =>'orgdoms',
+                htmldetail    =>'NotEmpty',
                 htmleditwidth =>'100px',
                 dataobjattr   =>'vou.sdcid'),
 
