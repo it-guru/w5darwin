@@ -56,6 +56,12 @@ sub new
             label         =>'Name'),
 
       new kernel::Field::Text(     
+            name          =>'status',
+            dataobjattr   =>'_source.Status',
+            ElasticType   =>'none',      # status can't be handled by ES query
+            label         =>'Status'),
+
+      new kernel::Field::Text(     
             name          =>'hubid',
             dataobjattr   =>'_source.{Name}',
             ignorecase    =>1,
@@ -141,7 +147,7 @@ sub new
             dataobjattr   =>'_source.Modified'),
 
    );
-   $self->setDefaultView(qw(shortname hubid domainid sdcid fullname boit));
+   $self->setDefaultView(qw(shortname status hubid domainid sdcid fullname boit));
    $self->LimitBackend(10000);
    return($self);
 }
@@ -347,12 +353,32 @@ sub ESprepairRawResult
    my $self=shift;
    my $data=shift;
 
-   my @result;
    map({
       $_=FlattenHash($_);
+      if ($_->{'_source.Status'} eq ""){
+         $_->{'_source.Status'}='AKTIV';
+      }
+      if ($_->{'_source.Hub_name_short'}=~m/ INAK$/i){
+         $_->{'_source.Status'}='INAKTIV';
+      }
+      #if ($_->{'_source.Hub_name_short'}=~m/CO/i){
+      #   $_->{'_source.Status'}='INAKTIV';
+      #}
+      if (!in_array([qw(INAKTIV AKTIV)],$_->{'_source.Status'})){
+         $_->{'_source.Status'}='INAKTIV';
+      }
+
    } @$data);
-   return(\@result);
 }
+
+sub initSearchQuery
+{
+   my $self=shift;
+   if (!defined(Query->Param("search_status"))){
+     Query->Param("search_status"=>"AKTIV");
+   }
+}
+
 
 
 

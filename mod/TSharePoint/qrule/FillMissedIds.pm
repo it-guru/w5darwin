@@ -172,6 +172,7 @@ sub qcheckRecord
          }
       }
       if ($parrec->{shortname} ne "" && 
+          ($parrec->{shortname}=~m/^[0-9A-Z]{3}$/) &&
           $parrec->{shortname} ne $rec->{shortname}){
          # check if new $parrec->{shortname} is free
          $dataobj->ResetFilter();
@@ -203,6 +204,25 @@ sub qcheckRecord
                           mode=>'string');
 
 
+      }
+   }
+
+   if (!keys(%$forcedupd)){ # there are no outstanding updates
+      msg(INFO,"HubMaster: no Updates are outstanding");
+      if (!defined($parrec)){
+         my $msg="unable to identify HUB at TSharePoint HubMaster list";
+         push(@qmsg,$msg);
+         push(@dataissue,$msg);
+         $errorlevel=3 if ($errorlevel<3);
+      }
+      else{
+         if ($parrec->{status} ne "AKTIV" &&
+             $rec->{cistatusid}<6){
+            my $msg="identified HUB at TSharePoint HubMaster list is not AKTIV";
+            push(@qmsg,$msg);
+            push(@dataissue,$msg);
+            $errorlevel=3 if ($errorlevel<3);
+         }
       }
    }
 
