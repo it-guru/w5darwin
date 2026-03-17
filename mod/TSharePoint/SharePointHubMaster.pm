@@ -367,6 +367,7 @@ sub ESprepairRawResult
       if (!in_array([qw(INAKTIV AKTIV)],$_->{'_source.Status'})){
          $_->{'_source.Status'}='INAKTIV';
       }
+      $_->{'_source.{Name}'}=uc($_->{'_source.{Name}'});
 
    } @$data);
 }
