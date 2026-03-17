@@ -540,6 +540,7 @@ sub Validate
    my $newrec=shift;
    my $comprec=shift;
 
+
    my $outype=effVal($oldrec,$newrec,"outype");
    if (!defined($oldrec) || defined($newrec->{shortname})){
       my $newshortname=$newrec->{shortname};
@@ -727,11 +728,27 @@ sub syncToGroups
    my $leader=$leaderid;
    $leader=$leaderitid if ($leaderitid ne "");
 
+
+
+   my $grp=$self->getPersistentModuleObject("w5grp","base::grp");
+
    my $basegrpname=effVal($oldrec,$newrec,"responsibleorg");
+   my $rorgid=effVal($oldrec,$newrec,"rorgid");
+
+   if ($basegrpname eq "" && $rorgid ne ""){
+      $grp->SetFilter({grpid=>\$rorgid});
+      my @l=$grp->getHashList(qw(grpid fullname));
+      if ($#l==0){
+         $basegrpname=$l[0]->{fullname};
+      }
+   }
+
+ 
    my $parentgrp=$basegrpname.".Hub";
    my $fullname=$parentgrp.".".$shortname;
 
-   my $grp=$self->getPersistentModuleObject("w5grp","base::grp");
+
+   $grp->ResetFilter(); 
    $grp->SetFilter([{
       fullname=>$fullname
    },
