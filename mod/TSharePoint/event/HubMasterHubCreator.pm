@@ -143,6 +143,24 @@ sub HubMasterHubCreator
          $op->SetFilter({id=>\$newid});
          my @n=$op->getHashList(qw(ALL));
          foreach my $rec (@n){
+            msg(INFO,"HubMasterHubCreator create :".$rec->{shortname});
+            my %notifyparam=(emailbcc=>['11634953080001']);
+            my %notifycontrol=();
+            $notifycontrol{mode}="INFO";
+            $op->NotifyWriteAuthorizedContacts($rec,undef,
+                                              \%notifyparam,\%notifycontrol,sub{
+               my ($subject,$ntext);
+               my $subject=$self->T("virutal oranisation unit (HUB) created").
+                           ": ".$rec->{shortname};
+               my $tmpl=$op->getParsedTemplate("tmpl/HubMasterHubCreator_new",{
+                  static=>{
+                     SHORTNAME=>$rec->{shortname},
+                     URL=>$rec->{urlofcurrentrec}
+                  }
+               });
+               return($subject,$tmpl);
+            });
+
 
          }
 
