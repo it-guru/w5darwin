@@ -21,6 +21,10 @@ a:link, a:visited, a:active  {
 <img width=80 src='../load/tlogo.gif'><br>
 <span style="font-family:Tele,'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:900;color:#4b4b4b;line-height:1.3;font-size:0.9rem">Deutsche Telekom</span>
 </div>
+<div style='position:absolute;left:200px;top:20px'>
+<a href="https://yam-united.telekom.com/pages/sacm-dtit/apps/blog/blog/view/f0fd36de-60b5-4183-b587-e8953dddaf0e" target=_blank><img src='../load/sensless-retire-msg.jpg'></a>
+</div>
+
 <div style='position:absolute;right:0;margin:5px;margin-left:180px'>
 <span style="font-family:Tele,'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;color:white;line-height:1.3;font-size:0.7rem">%SUPPORTINFO%</span>
 %FAKEBASICLOGOFF%
