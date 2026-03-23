@@ -112,6 +112,7 @@ sub getDummyRequest
    my $d=$self->CollectREST(
       dbname=>$credentialName,
       timeout=>5,
+      useproxy=>1,
       headers=>sub{
          my $self=shift;
          my $baseurl=shift;
