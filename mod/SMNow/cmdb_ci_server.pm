@@ -239,6 +239,7 @@ sub getDummyRequest
    my $d=$self->CollectREST(
       dbname=>$credentialName,
       timeout=>5,
+      useproxy=>1,
       retry_count=>3,
       retry_interval=>30,
       headers=>sub{

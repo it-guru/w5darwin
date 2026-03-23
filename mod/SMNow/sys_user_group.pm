@@ -241,6 +241,7 @@ sub DataCollector
       dbname=>$credentialName,
       timeout=>30,
       retry_count=>5,
+      useproxy=>1,
       retry_interval=>30,
       headers=>sub{
          my $self=shift;
