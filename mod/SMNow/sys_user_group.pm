@@ -134,6 +134,7 @@ sub getDummyRequest
       dbname=>$credentialName,
       timeout=>15,
       retry_count=>3,
+      useproxy=>1,
       retry_interval=>30,
       headers=>sub{
          my $self=shift;
