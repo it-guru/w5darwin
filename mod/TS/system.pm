@@ -338,7 +338,6 @@ sub doIPanalyse
 
    my $acsys=$p->getPersistentModuleObject("tsacinv::system");
    my $acautosys=$p->getPersistentModuleObject("tsacinv::autodiscsystem");
-   my $neoRec=$p->getPersistentModuleObject("neo::ipaddressAnalyse");
    my $itclust=$p->getPersistentModuleObject("itil::itclust");
    my $lnkitclustsvc=$p->getPersistentModuleObject("itil::lnkitclustsvc");
 
