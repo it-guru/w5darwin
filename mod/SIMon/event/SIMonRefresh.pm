@@ -258,7 +258,8 @@ sub SIMonRefresh
    my $StreamDataobj="SIMon::lnkmonpkgrec";
    my @datastreamview=qw(id systemid monpkgid system monpkg rawreqtarget
                          monpkgrestriction
-                         monpkgrestrictarget);
+                         monpkgrestrictarget
+                         curinststate exceptreqtxt);
 
    my $system=getModuleObject($self->Config,"itil::system");
    my $datastream=getModuleObject($self->Config,$StreamDataobj);
@@ -318,6 +319,7 @@ sub SIMonRefresh
          if ($opmode eq "dev"){
             msg(INFO,sprintf("%6d",$refreshCount)." processing ".$rec->{system}.
                      " in pkg ".$rec->{monpkg});
+            #print STDERR Dumper($rec);
          }
          my $newtarget=$rec->{monpkgrestrictarget};
          if ($rec->{monpkgrestriction} ne ""){
@@ -345,10 +347,15 @@ sub SIMonRefresh
             });
          }
          else{
-            my $bk=$opobj->ValidatedUpdateRecord($rec,{
+            my $upd={
                rawreqtarget=>$newtarget,
                mdate=>NowStamp("en")
-            },{id=>\$rec->{id}});
+            };
+            if ($rec->{curinststate} eq "INSTALLED" &&
+                $rec->{exceptreqtxt} ne ""){
+               $upd->{exceptreqtxt}="";
+            }
+            my $bk=$opobj->ValidatedUpdateRecord($rec,$upd,{id=>\$rec->{id}});
          }
 
          ($rec,$msg)=$datastream->getNext();
