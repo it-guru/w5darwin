@@ -17,12 +17,14 @@ package TASTEOS::tsossystem;
 #  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 use strict;
-use vars qw(@ISA);
+use vars qw(@ISA $UnassignedMachinesId);
 use kernel;
 use kernel::Field;
 use TASTEOS::lib::Listedit;
 use JSON;
 @ISA=qw(TASTEOS::lib::Listedit);
+
+$UnassignedMachinesId="3d359550-8129-4b70-a4c5-a66ec1399241";
 
 sub new
 {
@@ -340,8 +342,8 @@ sub DeleteRecord
 
    my $dbclass="systems/$oldrec->{id}";
 
-   if (lc($oldrec->{id}) eq "3d359550-8129-4b70-a4c5-a66ec1399241"){
-      msg(ERROR,"Critial-ERROR! - Try to delete 'Unassigned Systems'");
+   if (lc($oldrec->{id}) eq $UnassignedMachinesId){
+      msg(ERROR,"Critial-ERROR! - Try to delete 'Unassigned Machines'");
       Stacktrace();
       return(undef);
    }
@@ -393,7 +395,12 @@ sub getUnassignedMachinesRec
    $self->SetFilter({name=>['Unassigned Machines']});
    my @l=$self->getHashList(qw(ALL));
    if ($#l==-1){
-      my $bk=$self->ValidatedInsertRecord({name=>'Unassigned Machines'});
+      msg(WARN,"search for 'Unassigned Machines' returns an empty result");
+      msg(WARN,"try to recreate 'Unassigned Machines'");
+      my $bk=$self->ValidatedInsertRecord({
+          id=>$UnassignedMachinesId,
+          name=>'Unassigned Machines'
+      });
       $self->SetFilter({id=>\$bk});
       @l=$self->getHashList(qw(ALL));
    }
