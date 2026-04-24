@@ -1,2 +1,22 @@
 <b>EntraID</b><br>
-You can login with EntraID (Telekom Mandant) from the Microsoft Cloud.
+You can login with EntraID 
+(Telekom Mandant bde4dffc-4b60-4cf6-8b04-a5eeb25f5c4f) from the Microsoft Cloud.
+
+To bookmark this page in your web browser, you can directly save the link...<br>
+<br>
+https://<b>entraid:entraid</b>@darwin.telekom.de/darwin/auth/base/menu/root<br>
+<br>
+... this will trigger the EntraID login directly when you click on 
+this bookmark.<br>
+<br>
+If you click on direct links (e.g., from emails) and haven't yet logged in,
+the "normal" browser login dialog (BasicAuth) will appear. At this point, 
+you can enter "entraid" as the login name (password is irrelevant)
+and thus initiate an EntraID login.<br>
+<br>
+Once an EntraID login has been initiated, the login cannot be changed 
+until the web browser is completely closed. Similarly, for 
+EntraID logins, logging out can only be accomplished by completely 
+closing the web browser.
+
+

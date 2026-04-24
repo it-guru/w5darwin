@@ -1,2 +1,13 @@
 <b>EntraID</b><br>
-Login über EntraID aus dem Telekom Mandaten der Microsoft Cloud.
+Login über EntraID aus dem Telekom Mandaten (bde4dffc-4b60-4cf6-8b04-a5eeb25f5c4f) der Microsoft Cloud.<br>
+<br>
+Für einen Bookmark im Web-Browser kann direkt der Link ...<br>
+<br>
+<a target=_blank href="https://entraid:entraid@darwin.telekom.de/darwin/auth/base/menu/root" title="W5Base/Darwin EntraID">
+https://<b>entraid:entraid</b>@darwin.telekom.de/darwin/auth/base/menu/root</a><br>
+<br>
+... gespeichert werden. Damit wird dann EntraID Login direkt beim Klick auf diesen Bookmark ausgeführt.<br>
+<br>
+Wenn auf direkt Links (z.B. aus E-Mails) geklickt wird und noch kein Login durchgeführt wurde, wird der "normale" Browser-Login Dialog angezeigt (BasicAuth). An dieser Stelle kann "entraid" als Loginname (Passwort ist egal) angegeben werden und damit dann ein EntraID Login initiiert werden.<br>
+<br>
+Ist ein EntraID Login durchgeführt, so kann der Login nicht mehr geändert werden, solange der Web-Browser nicht vollständig beendet wurde. Auch für EntraID Logins gilt, dass das Abmelden nur durch vollständiges Beenden des Web-Browsers durchgeführt werden kann.
