@@ -2,6 +2,18 @@
 <tr>
 <td align=center valign=center>
 
+<style>
+.blink {
+    animation: blinker 1s linear infinite;
+    color: red;
+}
+
+@keyframes blinker {
+    10% {
+        opacity: 0;
+    }
+}
+</style>
 
 <table border=0 cellspacing=5 cellpadding=5>
 <tr>
@@ -12,7 +24,11 @@
 <td valign=center>
 <div style="border-width:1px;border-top-style:solid;border-bottom-style:solid;border-color:black;padding:3px;width:350px">
 
-<b>The service of central procurement of TeleSec Server.ID OV certificates will be discontinued summer 2025!</b><br>
+<b>
+The service of central procurement of TeleSec Server.ID OV certificates will on <font color=red class=blink size=+1>16.10.2026</font>&nbsp;.
+</b><br>
+<br>
+New certificates can no longer be obtained in this way.<br>
 <br>
 Please switch to automated procedures by then. <br>
 <br>

@@ -2,6 +2,19 @@
 <tr>
 <td align=center valign=center>
 
+<style>
+.blink {
+    animation: blinker 1s linear infinite;
+    color: red;
+}
+
+@keyframes blinker {
+    10% {
+        opacity: 0;
+    }
+}
+</style>
+
 
 <table border=0 cellspacing=5 cellpadding=5>
 <tr>
@@ -12,11 +25,14 @@
 <td valign=center>
 <div style="border-width:1px;border-top-style:solid;border-bottom-style:solid;border-color:black;padding:3px;width:380px">
 
-<b>Der Service der zentralen Beschaffung von TeleSec Server.ID OV Zertifikaten wird zum Sommer 2025 auslaufen.</b><br>
+<b>
+Der Service der zentralen Beschaffung von TeleSec Server.ID OV Zertifikaten wird am <font color=red class=blink size=+1>16.10.2026</font> beendet.</b><br>
+<br>
+Neue Zertifikate können über diesen Weg nicht mehr bezogen werden.<br>
 <br>
 Bitte bis dahin auf automatisierte Verfahren umstellen. <br>
 <br>
-Mit Server.ID-DV bietet die TeleSec eine Lösung mit ACME Support an.
+Mit Server.ID-DV bietet die TeleSec eine Lösung mit ACME Support an.<br>
 Weiterführende Informationen sind auf der YAMU Seite ...<br>
 <a href="https://yam-united.telekom.com/pages/zertifikate-in-dtit-certificate-in-dtit/apps/content/home" target=_blank>
 yam-united.telekom.com/pages/zertifikate-in-dtit-certificate-in-dtit
