@@ -532,11 +532,11 @@ sub displayRMO
          $o->SetFilter({id=>[map({$_->{id}} @s)]});
          $sById=$o->getHashIndexed(qw(id));
          my @systemid=grep(!/^\s*$/,map({$_->{systemid}} @s));
-         if ($#systemid!=-1){
-            my $o=$app->getPersistentModuleObject("tssmartcube::tcc");
-            $o->SetFilter({systemid=>\@systemid});
-            $tccById=$o->getHashIndexed(qw(systemid));
-         }
+       #  if ($#systemid!=-1){
+       #     my $o=$app->getPersistentModuleObject("tssmartcube::tcc");
+       #     $o->SetFilter({systemid=>\@systemid});
+       #     $tccById=$o->getHashIndexed(qw(systemid));
+       #  }
       }
       if ($#a!=-1){
          my $o=$app->getPersistentModuleObject("itil::asset");
@@ -581,16 +581,16 @@ sub displayRMO
             $d.="<td>".copyFrm($s[$i]->{systemid})."</td>";
             $d.="<td>".copyFrm($s[$i]->{productline})."</td>";
             $d.="<td align=center>";
-            if ($s[$i]->{systemid} ne "" && 
-               exists($tccById->{systemid}->{$s[$i]->{systemid}})){
-              $d.=copyFrm($app->OpenByIdWindow("tssmartcube::tcc",
-                                        $s[$i]->{systemid},
-                                        SignImg($s[$i]->{tcccolor}))
-              );
-            }
-            else{
-              $d.=copyFrm(SignImg($s[$i]->{tcccolor}));
-            }
+            #if ($s[$i]->{systemid} ne "" && 
+            #   exists($tccById->{systemid}->{$s[$i]->{systemid}})){
+            #  $d.=copyFrm($app->OpenByIdWindow("tssmartcube::tcc",
+            #                            $s[$i]->{systemid},
+            #                            SignImg($s[$i]->{tcccolor}))
+            #  );
+            #}
+            #else{
+            #  $d.=copyFrm(SignImg($s[$i]->{tcccolor}));
+            #}
             $d.="</td>";
             {
                my $DItext="";
@@ -971,38 +971,38 @@ sub processRecord
             };
          }
       }
-      if (keys(%systemsystemid)){
-         my $tcc=$app->getPersistentModuleObject("tssmartcube::tcc");
-         $tcc->SetFilter({systemid=>[keys(%systemsystemid)]});
-         foreach my $tccrec ($tcc->getHashList(qw(systemid 
-                                                  systemname
-                                                  check_release_color
-                                                  osroadmapstate))){
-            my $tcc_color=$tccrec->{check_release_color};
-            $tcc_color="green" if ($tcc_color eq "");
-            if ($tccrec->{osroadmapstate} ne ""){
-               if ($tccrec->{osroadmapstate}=~m/^FAIL/){
-                  $tcc_color="red";
-               }
-               if ($tccrec->{osroadmapstate}=~m/^FAIL but OK/){
-                  $tcc_color="blue";
-               }
-               if ($tccrec->{osroadmapstate}=~m/^WARN but OK/){
-                  $tcc_color="blue";
-               }
-               if ($tccrec->{osroadmapstate}=~m/^WARN but not OK/){
-                  $tcc_color="yellow";
-               }
-               if ($tccrec->{osroadmapstate}=~m/^OK/){
-                  $tcc_color="green";
-               }
-               if ($tccrec->{osroadmapstate}=~m/^OK unrestricted/){
-                  $tcc_color="gray";
-               }
-            }
-            $systemsystemid{$tccrec->{systemid}}->{roadmap_color}=$tcc_color;
-         }
-      }
+      #if (keys(%systemsystemid)){
+      #   my $tcc=$app->getPersistentModuleObject("tssmartcube::tcc");
+      #   $tcc->SetFilter({systemid=>[keys(%systemsystemid)]});
+      #   foreach my $tccrec ($tcc->getHashList(qw(systemid 
+      #                                            systemname
+      #                                            check_release_color
+      #                                            osroadmapstate))){
+      #      my $tcc_color=$tccrec->{check_release_color};
+      #      $tcc_color="green" if ($tcc_color eq "");
+      #      if ($tccrec->{osroadmapstate} ne ""){
+      #         if ($tccrec->{osroadmapstate}=~m/^FAIL/){
+      #            $tcc_color="red";
+      #         }
+      #         if ($tccrec->{osroadmapstate}=~m/^FAIL but OK/){
+      #            $tcc_color="blue";
+      #         }
+      #         if ($tccrec->{osroadmapstate}=~m/^WARN but OK/){
+      #            $tcc_color="blue";
+      #         }
+      #         if ($tccrec->{osroadmapstate}=~m/^WARN but not OK/){
+      #            $tcc_color="yellow";
+      #         }
+      #         if ($tccrec->{osroadmapstate}=~m/^OK/){
+      #            $tcc_color="green";
+      #         }
+      #         if ($tccrec->{osroadmapstate}=~m/^OK unrestricted/){
+      #            $tcc_color="gray";
+      #         }
+      #      }
+      #      $systemsystemid{$tccrec->{systemid}}->{roadmap_color}=$tcc_color;
+      #   }
+      #}
       #######################################################################
 
       #######################################################################
