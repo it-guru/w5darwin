@@ -379,7 +379,7 @@ sub qcheckRecord
                   $emailtyp="primary" if ($emailattr eq "email" &&
                                       lc($caimansubrec->{primary}) eq "true");
                   if ($caimansubrec->{$emailattr}=~m/^.+\@.+$/){
-                     my $lcemail=lc($caimansubrec->{$emailattr});
+                     my $lcemail=trim(lc($caimansubrec->{$emailattr}));
                      if (!in_array([map({$_->{email}} @emails)],$lcemail)){
                         push(@emails,{
                            emailtyp=>$emailtyp,
@@ -409,9 +409,9 @@ sub qcheckRecord
                      # need to remove alternate email adress from outer contact
                      if ($alturec->{srcsys} ne "CAIMAN"){
                         $dataobj->Log(ERROR,"basedata",
-                             "Fail to move alternate email '$emailrec->{email}' ".
-                             "to '$rec->{fullname}' - admin intervention ".
-                             "needed");
+                           "Fail to move alternate email '$emailrec->{email}' ".
+                           "to '$rec->{fullname}' - admin intervention ".
+                           "needed");
                      }
                      if (defined($alturec)){
                         if ($ue->DeleteRecord($alturec)){
