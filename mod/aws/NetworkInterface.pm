@@ -78,6 +78,18 @@ sub new
                 label         =>'is remote interface'),
 
       new kernel::Field::Text(
+                name          =>'ec2attachmentid',
+                htmldetail    =>'NotEmpty',
+                searchable    =>0,
+                label         =>'EC2 AttachmentId'),
+
+      new kernel::Field::Text(
+                name          =>'ipaddresseslist',
+                htmldetail    =>'NotEmpty',
+                searchable    =>0,
+                label         =>'IP-Address List'),
+
+      new kernel::Field::Text(
                 name          =>'eniownerid',
                 FieldHelpType =>'GenericConstant',
                 label         =>'ENI OwnerID'),
@@ -115,7 +127,7 @@ sub new
 
    );
    $self->{'data'}=\&DataCollector;
-   $self->setDefaultView(qw(id description ipadresses));
+   $self->setDefaultView(qw(id description ec2attachmentid ipaddresseslist));
    return($self);
 }
 
@@ -197,6 +209,13 @@ sub DataCollector
                               $AWSAccount.'@'.
                               $AWSRegion,
                   };
+                  my $Attachment=$netIf->Attachment();
+                  if (exists($Attachment->{InstanceId}) &&
+                      $Attachment->{InstanceId} ne "" &&
+                      $Attachment->{Status} eq "attached"){
+                     $rec->{ec2attachmentid}=$Attachment->{InstanceId};
+                  }
+                  
                   if ($rec->{accountid} ne $rec->{eniownerid}){
                      $rec->{isremote}="1";
                   }
@@ -246,6 +265,7 @@ sub DataCollector
                     # p $ip6rec;
                   }
                   $rec->{ipadresses}=\@ip;
+                  $rec->{ipaddresseslist}=[map({$_->{name}} @ip)];
                   push(@result,$rec);
                }
             }
