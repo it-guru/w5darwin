@@ -126,6 +126,7 @@ sub qcheckRecord
       my %updip;
       foreach my $if (@netif){
          foreach my $iprec (@{$if->{ipadresses}}){
+            next if ($iprec->{name} eq "");
             $allip{$iprec->{name}}={
                name=>$iprec->{name},
                id=>$if->{id},
