@@ -140,7 +140,12 @@ sub qcheckRecord
          my $msg="can not resolv hostname";
          return(3,{qmsg=>$msg,dataissue=>$msg});
       }
+      elsif (exists($res->{exitcode}) && exists($res->{exitmsg})){
+         my $msg=$res->{exitmsg};
+         return(3,{qmsg=>$msg,dataissue=>$msg});
+      }
       else{
+         printf STDERR ("res=%s\n",Dumper($res));
          return(undef,{
             qmsg=>"ERROR: unknon problem while itil::lib::Listedit::probeUrl"
          });
