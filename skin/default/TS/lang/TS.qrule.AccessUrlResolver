@@ -6,3 +6,6 @@
 'URL deleted'=>{de=>'URL gelöscht'},
 'invalid hostname'=>{de=>'ungültiger hostname'},
 'can not identify hostname in'=>{de=>'hostname nicht identifizierbar'},
+'at least on domain label illegal longer than 63 characters'=>{
+   de=>'ERROR: mindestens ein Domain-Label, das unzulässig länger als 63 Zeichen ist'
+},
