@@ -97,6 +97,13 @@ sub qcheckRecord
 
    return(undef,undef) if ($rec->{srcid} eq "");
 
+   if ($rec->{srcsys} eq "AssetManager" && $rec->{systemid} eq ""){
+      # SystemID is lost - this can happend, if malfunced AssetManager 
+      # DataBase access is happend. In this case, tread all as not
+      # already detected MCOS
+      $rec->{srcsys}=$rec->{itcloudshortname};
+   }
+
    if (lc($rec->{srcsys}) eq "tpc"){ # migration TPC->TPC1
       $dataobj->ValidatedUpdateRecord($rec,{srcsys=>'TPC1'},{id=>$rec->{id}});
       $rec->{srcsys}="TPC1";
