@@ -119,6 +119,23 @@ sub qcheckRecord
    #          ist i.d.R. die SystemID - es sei den es ist MCOS, dann ist in
    #          srcid (W5Base) die srcid aus AssetManager (also die MCOS vmid)
    #
+
+   if ($rec->{srcsys} eq "AssetManager" && 
+       $rec->{systemid} eq "" &&
+       $rec->{cistatusid} eq "4" &&
+       ($rec->{srcid}=~m/^S[0-9]{3,10}$/)){
+      $par->ResetFilter();
+      $par->SetFilter({systemid=>\$rec->{srcid}});
+      my ($parrec,$msg)=$par->getOnlyFirst(qw(ALL));
+      if (defined($parrec)){
+         push(@qmsg,"try to restore lost systemid");
+         $forcedupd->{systemid}=$rec->{srcid};
+         return($self->HandleQRuleResults("AssetManager",
+                    $dataobj,$rec,$checksession,
+                    \@qmsg,\@dataissue,\$errorlevel,$wfrequest,$forcedupd));
+      }
+   }
+ 
    if ($rec->{systemid} ne ""){   # pruefen ob SYSTEMID von AssetManager
       $par->SetFilter({systemid=>\$rec->{systemid}});
       ($parrec,$msg)=$par->getOnlyFirst(qw(ALL));
