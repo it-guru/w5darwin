@@ -77,24 +77,25 @@ sub Validate
    my $dataobj=shift;
    my $oldrec=shift;
    my $newrec=shift;
-   if ($dataobj->SelfAsParentObject() eq "itil::system"){
-      if (effVal($oldrec,$newrec,"srcsys") ne "AssetManager" &&
-          effChanged($oldrec,$newrec,"cistatusid")){
-         if (($oldrec->{cistatusid}<5 &&    # deaktivieren
-              $newrec->{cistatusid}>4) ||   
-             ($oldrec->{cistatusid}<5 &&    # reserviieren
-              $newrec->{cistatusid}<3)){
-            my $o=getModuleObject($dataobj->Config,"TS::system");
-            my $id=effVal($oldrec,$newrec,"id");
-            $o->SetFilter({id=>\$id});
-            my ($sysrec)=$o->getOnlyFirst(qw(systemid));
-            if (defined($sysrec)){
-               my $systemid=$sysrec->{systemid};
-               return(0) if (!$self->checkAgainstAM($dataobj,$systemid));
-            }
-         }
-      }
-   }
+
+#   if ($dataobj->SelfAsParentObject() eq "itil::system"){
+#      if (effVal($oldrec,$newrec,"srcsys") ne "AssetManager" &&
+#          effChanged($oldrec,$newrec,"cistatusid")){
+#         if (($oldrec->{cistatusid}<5 &&    # deaktivieren
+#              $newrec->{cistatusid}>4) ||   
+#             ($oldrec->{cistatusid}<5 &&    # reserviieren
+#              $newrec->{cistatusid}<3)){
+#            my $o=getModuleObject($dataobj->Config,"TS::system");
+#            my $id=effVal($oldrec,$newrec,"id");
+#            $o->SetFilter({id=>\$id});
+#            my ($sysrec)=$o->getOnlyFirst(qw(systemid));
+#            if (defined($sysrec)){
+#               my $systemid=$sysrec->{systemid};
+#               return(0) if (!$self->checkAgainstAM($dataobj,$systemid));
+#            }
+#         }
+#      }
+#   }
 
    return(1)
 }
@@ -104,20 +105,22 @@ sub ValidateDelete
    my $self=shift;
    my $dataobj=shift;
    my $rec=shift;
-   if ($dataobj->SelfAsParentObject() eq "itil::system"){
-      if ($rec->{srcsys} ne "AssetManager" && 
-          ($rec->{cistatusid}==3 ||
-           $rec->{cistatusid}==4)){
-         my $o=getModuleObject($dataobj->Config,"TS::system");
-         my $id=$rec->{id};
-         $o->SetFilter({id=>\$id});
-         my ($sysrec)=$o->getOnlyFirst(qw(systemid));
-         if (defined($sysrec)){
-            my $systemid=$sysrec->{systemid};
-            return(0) if (!$self->checkAgainstAM($dataobj,$systemid));
-         }
-      }
-   }
+
+#   if ($dataobj->SelfAsParentObject() eq "itil::system"){
+#      if ($rec->{srcsys} ne "AssetManager" && 
+#          ($rec->{cistatusid}==3 ||
+#           $rec->{cistatusid}==4)){
+#         my $o=getModuleObject($dataobj->Config,"TS::system");
+#         my $id=$rec->{id};
+#         $o->SetFilter({id=>\$id});
+#         my ($sysrec)=$o->getOnlyFirst(qw(systemid));
+#         if (defined($sysrec)){
+#            my $systemid=$sysrec->{systemid};
+#            return(0) if (!$self->checkAgainstAM($dataobj,$systemid));
+#         }
+#      }
+#   }
+
    return(1);
 }
 
