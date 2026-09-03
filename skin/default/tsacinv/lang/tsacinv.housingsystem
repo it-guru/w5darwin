@@ -1,0 +1,11 @@
+'tsacinv::housingsystem'=>{de=>'AssetManager housing/invoiceonly log. System',
+                    en=>'AssetManager housing/invoiceonly log. System'},
+'fieldgroup.default'=>{de=>'allgemeine Systemdaten', en=>'common system data'},
+'invoice considered Usage'=>{
+de=>'invoice berücksichtigte Verwendung'
+},
+'fieldgroup.applications'=>{de=>'Anwendungen', en=>'Applications'},
+'
+
+
+
