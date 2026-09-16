@@ -24,6 +24,10 @@ a:link, a:visited, a:active  {
 <div style='position:absolute;left:200px;top:20px'>
 <a href="https://my-t.telekom.de/sites/sacm-service-asset-and-configurationmanagement-dtit-gmbh/news/1040364/migration-to-smnow-72c9ec25" target=_blank><img src='../load/sensless-retire-msg.jpg'></a>
 </div>
+</div>
+<div style='position:absolute;left:930px;top:23px'>
+<a href="https://my-t.telekom.de/sites/sm-now/news/2635752/disaster-recovery-moves-to-sm-now" target=_blank><img src='../load/sensless-dr-retire-msg.jpg'></a>
+</div>
 
 <div style='position:absolute;right:0;margin:5px;margin-left:180px'>
 <span style="font-family:Tele,'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700;color:white;line-height:1.3;font-size:0.7rem">%SUPPORTINFO%</span>
