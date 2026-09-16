@@ -679,6 +679,12 @@ sub isWriteValid
    my $self=shift;
    my $rec=shift;
 
+   my $t2dealline=CalcDateDuration("2026-10-15 00:00:00",NowStamp("en"));
+   if (!defined($t2dealline) || $t2dealline->{totaldays}>0){
+      msg(WARN,"dealline 16.10.2026 reached days=".$t2dealline->{totaldays});
+      return(undef);
+   }
+
    return("request") if (!defined($rec));
 
    if ($self->IsMemberOf("admin")){
